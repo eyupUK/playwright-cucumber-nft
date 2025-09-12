@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "lib": ["es2021"],
+    "typeRoots": ["./node_modules/@types", "src/helper/types"],
+    "resolveJsonModule": true
+  }
+}
