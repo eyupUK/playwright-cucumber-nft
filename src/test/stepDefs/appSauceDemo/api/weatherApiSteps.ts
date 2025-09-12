@@ -17,7 +17,7 @@ Given('I have a valid WeatherAPI key configured', async function () {
   if (apiKey == null || apiKey.trim() === "") {
     throw new Error("Set WEATHERAPI_KEY as env or -D system property");
   }
-  baseUrl = "https://api.weatherapi.com/v1";
+  baseUrl = process.env.WEATHERAPI_BASEURL || "http://api.weatherapi.com/v1";
 });
 
 // current.json
@@ -47,6 +47,9 @@ Then('the {string} equals {string} if provided', async function (actualDataPath,
   if (expectedData) {
     const actualValue = actualDataPath.split('.').reduce((obj: any, key: string) => obj && obj[key], payload);
     expect(actualValue).toBe(expectedData);
+  }
+  else {
+    throw new Error(`Skipping check for ${actualDataPath} as expected data is not provided`);
   }
 });
 
