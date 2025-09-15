@@ -231,7 +231,7 @@ Playwright-Cucumber-TS
 
 ![Report2](images/allure2.png)
 
-![Report2](images/allure2.png)
+![Report2](images/allure3.png)
 
 ![cucumber](images/cucumber-report.png)
 
