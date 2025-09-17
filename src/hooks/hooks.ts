@@ -1,122 +1,100 @@
+// src/hooks/hooks.ts
 import {
   Before,
   After,
   ITestCaseHookParameter,
   Status,
   setDefaultTimeout,
-  BeforeAll,
-  AfterAll,
+  setWorldConstructor,
 } from '@cucumber/cucumber';
 import { devices } from '@playwright/test';
 import { PWWorld } from './world';
-import { options } from '../helper/util/logger';
-import fs from 'fs';
-import { console } from 'inspector';
 
+type BrowserName = 'chromium' | 'firefox' | 'webkit';
 type DeviceName = keyof typeof devices;
 
-function parseTagMap(pickle: ITestCaseHookParameter['pickle']) {
+// Ensure Cucumber uses our World class (do this once, in one place)
+setWorldConstructor(PWWorld);
+
+// ---- helpers ----
+function tagMap(pickle: ITestCaseHookParameter['pickle']) {
   const map = new Map<string, string | true>();
-  const tags = pickle.tags || [];
-  for (const t of tags) {
+  for (const t of pickle.tags) {
     const i = t.name.indexOf('=');
     if (i > -1) map.set(t.name.slice(0, i).trim(), t.name.slice(i + 1).trim());
-    else map.set(t.name, true);
+    else map.set(t.name.trim(), true);
   }
   return map;
 }
+function isBrowserName(v: unknown): v is BrowserName {
+  return v === 'chromium' || v === 'firefox' || v === 'webkit';
+}
+function isDeviceName(v: unknown): v is DeviceName {
+  return typeof v === 'string' && v in devices;
+}
+function parseTimeoutMs(s?: string): number | undefined {
+  if (!s) return undefined;
+  const m = s.trim().toLowerCase().match(/^(\d+)(ms|s|m)?$/);
+  if (!m) return undefined;
+  const n = Number(m[1]);
+  const unit = m[2] ?? 'ms';
+  return unit === 'ms' ? n : unit === 's' ? n * 1000 : n * 60000;
+}
 
-BeforeAll(() => {
-  setDefaultTimeout(60 * 1000);
-});
-
-AfterAll(() => {
-  // Cleanup logic after all tests
-});
-
+// ---- hooks ----
 Before(async function (this: PWWorld, { pickle }: ITestCaseHookParameter) {
-  const tags = parseTagMap(pickle);
-  const scenarioName = pickle.name.replace(/[^a-zA-Z0-9-_]/g, '_');
-  this.logger = options(scenarioName, 'debug');
-  this.logger.info(`Starting scenario: ${pickle.name}`);
+  const tags = tagMap(pickle);
 
-  const isApiOnly = tags.has('@api');
-  const baseURL = process.env.BASE_URL || (tags.get('@base') as string) || undefined;
-  const defaultMs = tags.has('@slow') ? 120_000 : 30_000;
+  // timeouts
+  const tagTimeout = parseTimeoutMs(String(tags.get('@timeout') || ''));
+  const defaultMs = tagTimeout ?? (tags.has('@slow') ? 120_000 : 30_000);
   setDefaultTimeout(defaultMs);
 
-  if (isApiOnly) {
-    this.logger.info('Initializing API-only scenario');
-    this.isApiOnly = true;
+  // @api scenarios: no browser/page
+  if (tags.has('@api')) {
     await this.init({
-      baseURL,
-      defaultHeaders: {
-        'Content-Type': 'application/json',
-        ...(process.env.API_TOKEN ? { Authorization: `Bearer ${process.env.API_TOKEN}` } : {}),
-      },
-      scenarioName,
+      isApiOnly: true,
+      baseURL: (process.env.BASE_URL as string | undefined) || undefined,
+      defaultHeaders: { 'Content-Type': 'application/json' },
     });
     return;
   }
 
+  // UI scenarios
   const browserTag = tags.get('@browser');
-  this.logger.info(`Browser tag: ${browserTag}`);
-  this.logger.info(`Browser : ${process.env.BROWSER}`);
-  const browser: string = typeof browserTag === 'string' ? browserTag : process.env.BROWSER || 'chromium';
-
-  this.logger.info(`Browser: ${browser}`);
+  const browser = isBrowserName(browserTag) ? browserTag : undefined;
 
   const mobileTag = tags.get('@mobile');
-  const device: DeviceName | undefined = typeof mobileTag === 'string' && mobileTag in devices
-    ? (mobileTag as DeviceName)
-    : undefined;
+  const device = isDeviceName(mobileTag) ? (mobileTag as DeviceName) : undefined;
 
   const storageState = tags.has('@auth') ? 'storage/authState.json' : undefined;
 
-  this.logger.info('Initializing browser and context');
   await this.init({
     browser,
     device,
     storageState,
     headless: process.env.HEAD === 'false' ? false : true,
-    recordVideo: {
-      dir: 'test-results/videos',
-      size: { width: 1280, height: 720 },
-    },
-    scenarioName,
   });
 
-  this.logger.info('Browser and context being initialized...');
-
+  // Apply Playwright defaults for this scenario
   this.page?.setDefaultTimeout(defaultMs);
   this.page?.setDefaultNavigationTimeout(defaultMs);
-
-  this.logger.info('Browser and context initialized');
 });
 
 After(async function (this: PWWorld, { result }: ITestCaseHookParameter) {
   const failed = result?.status !== Status.PASSED;
 
+  // If API-only, there is no page
   if (!this.page) {
-    this.logger.info('Disposing API-only scenario');
     await this.dispose();
     return;
   }
 
   if (failed) {
-    this.logger.error('Scenario failed, capturing screenshot and video');
-    const screenshot = await this.page.screenshot({ fullPage: true });
-    await this.attach?.(screenshot, 'image/png');
-
-    const videoPath = this.page ? await this.page.video()?.path() : undefined;
-    if (videoPath) {
-      const videoBuffer = fs.readFileSync(videoPath);
-      await this.attach?.(videoBuffer, 'video/webm');
-    } else {
-      this.logger.warn('No video recorded for this scenario.');
-    }
+    const shot = await this.page.screenshot({ fullPage: true });
+    // @ts-ignore: provided by cucumber World at runtime
+    await this.attach?.(shot, 'image/png');
   }
 
-  this.logger.info('Disposing browser and context');
   await this.dispose();
 });
