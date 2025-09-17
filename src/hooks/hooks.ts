@@ -6,9 +6,11 @@ import {
   Status,
   setDefaultTimeout,
   setWorldConstructor,
+  BeforeAll,
 } from '@cucumber/cucumber';
 import { devices } from '@playwright/test';
 import { PWWorld } from './world';
+import { getEnv } from '../helper/env/env';
 
 type BrowserName = 'chromium' | 'firefox' | 'webkit';
 type DeviceName = keyof typeof devices;
@@ -42,6 +44,11 @@ function parseTimeoutMs(s?: string): number | undefined {
 }
 
 // ---- hooks ----
+BeforeAll(async function () {
+    getEnv();
+    console.log("Env set BEFORE all tests");
+});
+
 Before(async function (this: PWWorld, { pickle }: ITestCaseHookParameter) {
   const tags = tagMap(pickle);
 
