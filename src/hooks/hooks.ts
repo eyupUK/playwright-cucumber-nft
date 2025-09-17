@@ -73,7 +73,7 @@ Before(async function (this: PWWorld, { pickle }: ITestCaseHookParameter) {
     browser,
     device,
     storageState,
-    headless: process.env.HEAD === 'false' ? false : true,
+    headless: process.env.HEAD === 'true' ? false : true,
   });
 
   // Apply Playwright defaults for this scenario
