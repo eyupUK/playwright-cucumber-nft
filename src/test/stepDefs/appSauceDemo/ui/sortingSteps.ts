@@ -1,7 +1,6 @@
 
 import { Given, When, Then, setDefaultTimeout } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { fixture } from "../../../../hooks/pageFixture";
 import InventoryPage from "../../../../pages//appSauceDemo/inventoryPage";
 import LoginPage from "../../../../pages//appSauceDemo/loginPage";
 
@@ -9,17 +8,17 @@ let loginPage: LoginPage;
 let inventoryPage: InventoryPage;
 
 
-Given('I am logged in as a standard user', async function () {
+Given('I am logged in as a standard user', async function (this: any) {
     // Write code here that turns the phrase above into concrete actions
-    loginPage = new LoginPage(fixture.page);
+    loginPage = new LoginPage(this.page);
     await loginPage.navigateToLoginPage();
     await loginPage.fillLogin("standard_user", "secret_sauce");
     await loginPage.clickLogin();
 });
 
-When('I sort products by {string}', async function (string) {
+When('I sort products by {string}', async function (this: any,string) {
     // Write code here that turns the phrase above into concrete actions
-    inventoryPage = new InventoryPage(fixture.page);
+    inventoryPage = new InventoryPage(this.page);
     expect( await inventoryPage.isLoaded()).toBeTruthy();
     await inventoryPage.sortByVisibleText(string);
 });

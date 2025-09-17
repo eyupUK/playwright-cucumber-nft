@@ -1,12 +1,13 @@
 import { expect, Locator, Page } from "@playwright/test";
 import PlaywrightWrapper from "../../helper/wrapper/PlaywrightWrapper";
 import { faker } from '@faker-js/faker';
-import { fixture } from "../../hooks/pageFixture";
+import { BasePage } from "./base.page";
 
-export default class CartPage {
+export default class CartPage extends BasePage{
     private base: PlaywrightWrapper;
 
-    constructor(private page: Page) {
+    constructor( page: Page) {
+        super(page);
         this.base = new PlaywrightWrapper(page);
     }
 
@@ -25,8 +26,6 @@ export default class CartPage {
     async isLoaded() {
         await this.page.waitForLoadState();
         await expect(this.page.locator(this.Elements.cartTitle)).toBeVisible({ timeout: 5000 });
-        console.log("Cart page loaded");
-        fixture.logger.info("Cart page loaded");
         return true;
     }
 
@@ -38,12 +37,10 @@ export default class CartPage {
             if (name) itemNames.push(name);
         }
         console.log(`All item names: ${itemNames.join(", ")}`);
-        fixture.logger.info(`All item names: ${itemNames.join(", ")}`);
         return itemNames;
     }
     async proceedToCheckout() {
         await this.page.locator(this.Elements.checkoutBtn).click();
         console.log("Proceeded to checkout");
-        fixture.logger.info("Proceeded to checkout");
     }
 }

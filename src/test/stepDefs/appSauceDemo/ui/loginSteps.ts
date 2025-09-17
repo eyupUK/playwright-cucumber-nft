@@ -1,6 +1,5 @@
 import { Given, When, Then, setDefaultTimeout } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { fixture } from "../../../../hooks/pageFixture";
 import LoginPage from "../../../../pages//appSauceDemo/loginPage";
 import { title } from "process";
 
@@ -8,9 +7,9 @@ import { title } from "process";
 let loginPage: LoginPage;
 setDefaultTimeout(60 * 1000 * 2)
 
-Given('I am on the SauceDemo login page', async function () {
+Given('I am on the SauceDemo login page', async function (this: any) {
     // Write code here that turns the phrase above into concrete actions
-    loginPage = new LoginPage(fixture.page);
+    loginPage = new LoginPage(this.page);
     await loginPage.navigateToLoginPage();
 });
 

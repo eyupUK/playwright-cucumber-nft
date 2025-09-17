@@ -1,14 +1,15 @@
 import { expect, Locator, Page } from "@playwright/test";
 import PlaywrightWrapper from "../../helper/wrapper/PlaywrightWrapper";
 import { faker } from '@faker-js/faker';
-import { fixture } from "../../hooks/pageFixture";
+import { BasePage } from "./base.page";
 
 
 
-export default class CheckoutOverviewPage {
+export default class CheckoutOverviewPage extends BasePage{
     private base: PlaywrightWrapper;
 
-    constructor(private page: Page) {
+    constructor( page: Page) {
+        super(page);
         this.base = new PlaywrightWrapper(page);
     }
 

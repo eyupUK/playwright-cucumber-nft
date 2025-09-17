@@ -1,143 +1,122 @@
-import { BeforeAll, AfterAll, Before, After, Status, BeforeStep, AfterStep } from "@cucumber/cucumber";
-import { Browser, BrowserContext } from "@playwright/test";
-import { fixture } from "./pageFixture";
-import { invokeBrowser, browserType } from "../helper/browsers/browserManager";
-import { getEnv } from "../helper/env/env";
-import { options } from "../helper/util/logger";
-const fs = require("fs-extra");
+import {
+  Before,
+  After,
+  ITestCaseHookParameter,
+  Status,
+  setDefaultTimeout,
+  BeforeAll,
+  AfterAll,
+} from '@cucumber/cucumber';
+import { devices } from '@playwright/test';
+import { PWWorld } from './world';
+import { options } from '../helper/util/logger';
+import fs from 'fs';
+import { console } from 'inspector';
 
-let browser: Browser;
-let context: BrowserContext;
-let environment: string;
+type DeviceName = keyof typeof devices;
 
-BeforeAll(async function () {
-    environment = getEnv();
-    console.log("Env set BEFORE all tests");
+function parseTagMap(pickle: ITestCaseHookParameter['pickle']) {
+  const map = new Map<string, string | true>();
+  const tags = pickle.tags || [];
+  for (const t of tags) {
+    const i = t.name.indexOf('=');
+    if (i > -1) map.set(t.name.slice(0, i).trim(), t.name.slice(i + 1).trim());
+    else map.set(t.name, true);
+  }
+  return map;
+}
+
+BeforeAll(() => {
+  setDefaultTimeout(60 * 1000);
 });
 
-Before({ tags: '@api' }, async function ({ pickle }) {
-    console.log("API Scenario: " + pickle.name);
-    fixture.logger = options(pickle.name, "debug");
-    fixture.logger.info("Environment set to: " + environment);
-    fixture.logger.info("API Scenario: " + pickle.name);
+AfterAll(() => {
+  // Cleanup logic after all tests
 });
 
-// It will trigger for non api scenarios
-Before({ tags: "not @api" }, async function ({ pickle }) {
-    console.log("Scenario: " + pickle.name);
-    console.log("Browser is set BEFORE for non-api scenarios");
-    browser = await invokeBrowser();
+Before(async function (this: PWWorld, { pickle }: ITestCaseHookParameter) {
+  const tags = parseTagMap(pickle);
+  const scenarioName = pickle.name.replace(/[^a-zA-Z0-9-_]/g, '_');
+  this.logger = options(scenarioName, 'debug');
+  this.logger.info(`Starting scenario: ${pickle.name}`);
 
-    // Save the browser info to a file
-    const browserInfo = {
-        name: browser.browserType().name(),
-        version: browser.version(),
-    };
-    fs.writeFileSync("browser-info.json", JSON.stringify(browserInfo, null, 2));
+  const isApiOnly = tags.has('@api');
+  const baseURL = process.env.BASE_URL || (tags.get('@base') as string) || undefined;
+  const defaultMs = tags.has('@slow') ? 120_000 : 30_000;
+  setDefaultTimeout(defaultMs);
 
-    console.log("Browser is set to " + browserType);
-    console.log("Scenario: " + pickle.name);
-    const scenarioName = (pickle.name + "_" + pickle.id).replace(/[^a-zA-Z0-9-_]/g, "_")
-    context = await browser.newContext({
-        // viewport: { width: 2560, height: 1343 },
-        recordVideo: {
-            dir: "test-results/videos"
-            // size: { width: 2560, height: 1343 }
-        }
+  if (isApiOnly) {
+    this.logger.info('Initializing API-only scenario');
+    this.isApiOnly = true;
+    await this.init({
+      baseURL,
+      defaultHeaders: {
+        'Content-Type': 'application/json',
+        ...(process.env.API_TOKEN ? { Authorization: `Bearer ${process.env.API_TOKEN}` } : {}),
+      },
+      scenarioName,
     });
-    await context.tracing.start({
-        name: scenarioName,
-        title: pickle.name,
-        sources: true,
-        screenshots: true, snapshots: true
-    });
+    return;
+  }
 
-    const page = await context.newPage();
+  const browserTag = tags.get('@browser');
+  this.logger.info(`Browser tag: ${browserTag}`);
+  this.logger.info(`Browser : ${process.env.BROWSER}`);
+  const browser: string = typeof browserTag === 'string' ? browserTag : process.env.BROWSER || 'chromium';
 
-    fixture.page = page;
+  this.logger.info(`Browser: ${browser}`);
 
-    fixture.logger = options(scenarioName, "debug");
+  const mobileTag = tags.get('@mobile');
+  const device: DeviceName | undefined = typeof mobileTag === 'string' && mobileTag in devices
+    ? (mobileTag as DeviceName)
+    : undefined;
 
-    fixture.logger.info("Environment set to: " + environment);
-    fixture.logger.warn("Browser is set to " + browserType);
-    fixture.logger.debug(`Before Scenario: ${pickle.name}`);
+  const storageState = tags.has('@auth') ? 'storage/authState.json' : undefined;
+
+  this.logger.info('Initializing browser and context');
+  await this.init({
+    browser,
+    device,
+    storageState,
+    headless: process.env.HEAD === 'false' ? false : true,
+    recordVideo: {
+      dir: 'test-results/videos',
+      size: { width: 1280, height: 720 },
+    },
+    scenarioName,
+  });
+
+  this.logger.info('Browser and context being initialized...');
+
+  this.page?.setDefaultTimeout(defaultMs);
+  this.page?.setDefaultNavigationTimeout(defaultMs);
+
+  this.logger.info('Browser and context initialized');
 });
 
-After({ tags: 'not @api' }, async function ({ pickle, result }) {
-    console.log("AFTER block is triggered");
-    const scenarioName = (pickle.name + "_" + pickle.id).replace(/[^a-zA-Z0-9-_]/g, "_")
-    const path = `./test-results/trace/${scenarioName}.zip`;
+After(async function (this: PWWorld, { result }: ITestCaseHookParameter) {
+  const failed = result?.status !== Status.PASSED;
 
-    // Screenshots and Video records when the scenario failed ONLY
-    if (result?.status == Status.FAILED) {
-        console.log("this scenario failed at this step");
-        fixture.logger.info("Attachments are being processed in AFTER this scenario failed");
-        let videoPath: string | any = fixture.page.video() ? await fixture.page.video()?.path() : null;
-        if (videoPath) {
-            this.attach(fs.readFileSync(videoPath), 'video/webm');
-        }
+  if (!this.page) {
+    this.logger.info('Disposing API-only scenario');
+    await this.dispose();
+    return;
+  }
 
-        await context.tracing.stop({ path: path });
-        this.attach(fs.readFileSync(videoPath), 'video/webm');
-        let img: Buffer;
-        img = await fixture.page.screenshot(
-            { path: `./test-results/screenshots/${pickle.name.replace(/[^a-zA-Z0-9-_]/g, "_")}/failed_step.png`, type: "png" });
-        await this.attach(img, "image/png");
+  if (failed) {
+    this.logger.error('Scenario failed, capturing screenshot and video');
+    const screenshot = await this.page.screenshot({ fullPage: true });
+    await this.attach?.(screenshot, 'image/png');
+
+    const videoPath = this.page ? await this.page.video()?.path() : undefined;
+    if (videoPath) {
+      const videoBuffer = fs.readFileSync(videoPath);
+      await this.attach?.(videoBuffer, 'video/webm');
+    } else {
+      this.logger.warn('No video recorded for this scenario.');
     }
+  }
 
-    // Attachments for all scenarios
-    const bashCommandTrace = `npx playwright show-trace ${path}`;
-    const traceFileLink = `<a href="https://trace.playwright.dev/" > Open ${path} </a>`
-    this.attach(`Trace file: ${traceFileLink}`, 'text/html');
-    this.attach(`Command for Trace File: ${bashCommandTrace}`, 'text/html');
-    console.log("Attachments processed AFTER non-api scenarios");
-
-    // Log info
-    fixture.logger.info(`After Scenario: ${pickle.name}`);
-    fixture.logger.info(`Scenario Status: ${result?.status}`);
-    fixture.logger.info(`Scenario Duration in Seconds: ${result?.duration.seconds}`);
-    fixture.logger.info(`Scenario Tags: ${pickle.tags.map(tag => tag.name)}`);
-    fixture.logger.info(`Scenario Steps: ${pickle.steps.map(step => step.text)}`);
-    await fixture.page.close();
-    await context.close();
-
-    // close browser
-    console.log("After this SCENARIO");
-    if (browser !== null && browser !== undefined) {
-        await browser.close();
-        console.log("Browser closed");
-    }
-});
-
-After({ tags: '@api' }, async function ({ pickle, result }) {
-    console.log("AFTER block is triggered for API scenarios");
-    // Log info
-    fixture.logger.info(`After Scenario: ${pickle.name}`);
-    fixture.logger.info(`Scenario Status: ${result?.status}`);
-    fixture.logger.info(`Scenario Duration in Seconds: ${result?.duration.seconds}`);
-    fixture.logger.info(`Scenario Tags: ${pickle.tags.map(tag => tag.name)}`);
-    fixture.logger.info(`Scenario Steps: ${pickle.steps.map(step => step.text)}`);
-});
-
-AfterAll(async function () {
-    console.log("After All scenarios");
-    // close browser
-    if (browser !== null && browser !== undefined) {
-        await browser.close();
-        console.log("Browser closed");
-    }
-});
-
-
-BeforeStep(async function ({ pickleStep }) {
-    console.log("Before Step: " + pickleStep.text);
-});
-
-AfterStep({ tags: "not @api" }, async function ({ pickle, pickleStep }) {
-    console.log("After Step: " + pickleStep.text);
-    // let img: Buffer;
-    // img = await fixture.page.screenshot(
-    //     { path: `./test-results/screenshots/${pickle.name.replace(/[^a-zA-Z0-9-_]/g, "_")}/${pickleStep.text}.png`, type: "png" });
-    // await this.attach(img, "image/png");
-    // console.log("Screenshot taken after this step");
+  this.logger.info('Disposing browser and context');
+  await this.dispose();
 });

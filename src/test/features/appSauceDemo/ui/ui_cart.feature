@@ -1,4 +1,4 @@
-@ui @cart
+@ui @cart 
 Feature: Cart
   As a logged in shopper
   I want to add items to my cart
