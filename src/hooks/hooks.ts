@@ -11,12 +11,93 @@ import {
 import { devices } from '@playwright/test';
 import { PWWorld } from './world';
 import { getEnv } from '../helper/env/env';
+import path from 'node:path';
+const fs = require("fs-extra");
 
 type BrowserName = 'chromium' | 'firefox' | 'webkit';
 type DeviceName = keyof typeof devices;
 
 // Ensure Cucumber uses our World class (do this once, in one place)
 setWorldConstructor(PWWorld);
+
+
+// ---- hooks ----
+BeforeAll(async function () {
+  getEnv();
+  console.log("Env set BEFORE all tests");
+});
+
+Before(async function (this: PWWorld, { pickle }: ITestCaseHookParameter) {
+  const tags = tagMap(pickle);
+  const scenarioName = (pickle.name + "_" + pickle.id).replace(/[^a-zA-Z0-9-_]/g, "_");
+
+  // timeouts
+  const tagTimeout = parseTimeoutMs(String(tags.get('@timeout') || ''));
+  const defaultMs = tagTimeout ?? (tags.has('@slow') ? 120_000 : 30_000);
+  //setDefaultTimeout(defaultMs);
+
+  // @api scenarios: no browser/page
+  if (tags.has('@api')) {
+    await this.init({
+      isApiOnly: true,
+      baseURL: (process.env.BASE_URL as string | undefined) || undefined,
+      defaultHeaders: { 'Content-Type': 'application/json' },
+    });
+    return;
+  }
+
+  // UI scenarios
+  const browserTag = tags.get('@browser');
+  const browser = isBrowserName(browserTag) ? browserTag : undefined;
+
+  const mobileTag = tags.get('@mobile');
+  const device = isDeviceName(mobileTag) ? (mobileTag as DeviceName) : undefined;
+
+  const storageState = tags.has('@auth') ? 'storage/authState.json' : undefined;
+
+  await this.init({
+    scenarioName,
+    browser,
+    device,
+    storageState,
+    headless: process.env.HEAD === 'true' ? false : true,
+  });
+
+  // Apply Playwright defaults for this scenario
+  this.page?.setDefaultTimeout(defaultMs);
+  this.page?.setDefaultNavigationTimeout(defaultMs);
+});
+
+After(async function (this: PWWorld, { result, pickle }: ITestCaseHookParameter) {
+  const failed = result?.status !== Status.PASSED;
+
+  // If API-only, there is no page
+  if (!this.page) {
+    await this.dispose();
+    return;
+  }
+
+
+  if (failed) {
+    const scenarioName = (pickle.name + '_' + pickle.id).replace(/[^a-zA-Z0-9-_]/g, '_');
+
+    // ✅ Get a Buffer (do NOT rely solely on file on disk)
+    const buffer = await this.page.screenshot({ fullPage: true, path: `test-results/screenshots/${scenarioName}_failed.png`, type: 'png' });
+
+    //  Attach to Cucumber (shows in reports that support embeddings)
+    await this.attach?.(buffer, 'image/png');
+  }
+  else {
+    let videoPath: string | any = this.page.video() ? await this.page.video()?.path() : null;
+    // delete the video if the scenario is passed
+    if (videoPath) {
+      fs.unlink(videoPath);
+    }
+  }
+  await this.dispose();
+});
+
+
 
 // ---- helpers ----
 function tagMap(pickle: ITestCaseHookParameter['pickle']) {
@@ -42,66 +123,3 @@ function parseTimeoutMs(s?: string): number | undefined {
   const unit = m[2] ?? 'ms';
   return unit === 'ms' ? n : unit === 's' ? n * 1000 : n * 60000;
 }
-
-// ---- hooks ----
-BeforeAll(async function () {
-    getEnv();
-    console.log("Env set BEFORE all tests");
-});
-
-Before(async function (this: PWWorld, { pickle }: ITestCaseHookParameter) {
-  const tags = tagMap(pickle);
-
-  // timeouts
-  const tagTimeout = parseTimeoutMs(String(tags.get('@timeout') || ''));
-  const defaultMs = tagTimeout ?? (tags.has('@slow') ? 120_000 : 30_000);
-  setDefaultTimeout(defaultMs);
-
-  // @api scenarios: no browser/page
-  if (tags.has('@api')) {
-    await this.init({
-      isApiOnly: true,
-      baseURL: (process.env.BASE_URL as string | undefined) || undefined,
-      defaultHeaders: { 'Content-Type': 'application/json' },
-    });
-    return;
-  }
-
-  // UI scenarios
-  const browserTag = tags.get('@browser');
-  const browser = isBrowserName(browserTag) ? browserTag : undefined;
-
-  const mobileTag = tags.get('@mobile');
-  const device = isDeviceName(mobileTag) ? (mobileTag as DeviceName) : undefined;
-
-  const storageState = tags.has('@auth') ? 'storage/authState.json' : undefined;
-
-  await this.init({
-    browser,
-    device,
-    storageState,
-    headless: process.env.HEAD === 'true' ? false : true,
-  });
-
-  // Apply Playwright defaults for this scenario
-  this.page?.setDefaultTimeout(defaultMs);
-  this.page?.setDefaultNavigationTimeout(defaultMs);
-});
-
-After(async function (this: PWWorld, { result }: ITestCaseHookParameter) {
-  const failed = result?.status !== Status.PASSED;
-
-  // If API-only, there is no page
-  if (!this.page) {
-    await this.dispose();
-    return;
-  }
-
-  if (failed) {
-    const shot = await this.page.screenshot({ fullPage: true });
-    // @ts-ignore: provided by cucumber World at runtime
-    await this.attach?.(shot, 'image/png');
-  }
-
-  await this.dispose();
-});

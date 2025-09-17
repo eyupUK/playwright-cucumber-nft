@@ -1,4 +1,5 @@
 // src/hooks/world.ts
+import { IWorld } from '@cucumber/cucumber';
 import {
   chromium, firefox, webkit,
   Browser, BrowserContext, Page,
@@ -7,6 +8,7 @@ import {
 import path from 'node:path';
 
 export type WorldParams = {
+  scenarioName?: string;
   // UI
   browser?: 'chromium' | 'firefox' | 'webkit';
   device?: keyof typeof devices;
@@ -18,7 +20,12 @@ export type WorldParams = {
   defaultHeaders?: Record<string, string>;
 };
 
-export class PWWorld {
+export class PWWorld implements IWorld{
+  [key: string]: any;
+  attach: any;
+  log: any;
+  link: any;
+  parameters: any;
   browser?: Browser;
   context?: BrowserContext;
   page?: Page;
@@ -43,6 +50,10 @@ export class PWWorld {
       ...(devicePreset ?? {}),
       storageState: params.storageState ? path.resolve(params.storageState) : undefined,
       ignoreHTTPSErrors: true,
+      recordVideo: {
+        dir: path.resolve(`test-results/videos/${params.scenarioName}`),
+        size: devicePreset?.viewport,
+      },
     });
 
     this.page = await this.context.newPage();
