@@ -51,7 +51,7 @@ export class PWWorld implements IWorld{
       storageState: params.storageState ? path.resolve(params.storageState) : undefined,
       ignoreHTTPSErrors: true,
       recordVideo: {
-        dir: path.resolve(`test-results/videos/${params.scenarioName}`),
+        dir: path.resolve(`test-results`, `videos`, `${params.scenarioName}`),
         size: devicePreset?.viewport,
       },
     });

@@ -80,8 +80,7 @@ After(async function (this: PWWorld, { result, pickle }: ITestCaseHookParameter)
 
   if (failed) {
     const scenarioName = (pickle.name + '_' + pickle.id).replace(/[^a-zA-Z0-9-_]/g, '_');
-
-    // ✅ Get a Buffer (do NOT rely solely on file on disk)
+    
     const buffer = await this.page.screenshot({ fullPage: true, path: `test-results/screenshots/${scenarioName}_failed.png`, type: 'png' });
 
     //  Attach to Cucumber (shows in reports that support embeddings)
