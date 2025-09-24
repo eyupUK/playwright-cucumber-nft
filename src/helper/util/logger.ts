@@ -1,6 +1,6 @@
 import { createLogger, transports, format } from "winston";
 
-export function options(scenarioName: string, logLevel: string = "info") {
+export function options(scenarioName?: string, logLevel: string = "info") {
     // Fallback to a default name if scenarioName is undefined or empty
     const safeScenarioName = scenarioName || "default_scenario";
 
@@ -31,9 +31,9 @@ export function options(scenarioName: string, logLevel: string = "info") {
                 )
             }),
         ],
-        exceptionHandlers: [
-            new transports.File({ filename: `test-results/logs/${safeScenarioName}-exceptions.log` })
-        ],
+        // exceptionHandlers: [
+        //     new transports.File({ filename: `test-results/logs/${safeScenarioName}-exceptions.log` })
+        // ],
         exitOnError: false, // Prevent the logger from exiting on exceptions
     });
 }

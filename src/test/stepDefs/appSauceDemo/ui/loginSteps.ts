@@ -8,7 +8,7 @@ let loginPage: LoginPage;
 setDefaultTimeout(60 * 1000 * 2)
 
 Given('I am on the SauceDemo login page', async function (this: any) {
-    // Write code here that turns the phrase above into concrete actions
+    this.logger.info('Starting scenario...');
     loginPage = new LoginPage(this.page);
     await loginPage.navigateToLoginPage();
 });
@@ -20,10 +20,10 @@ When('I login with username {string} and password {string}', async function (use
 
 Then('I should see the products page', async function () {
     const title = await loginPage.getTitle();
-    await expect(title).toBe('Products');
+    expect(title).toBe('Products');
 });
 
 Then('I should see an error message containing {string}', async function (errorMsg) {
     const errorMessage = await loginPage.getErrorMessage();
-    await expect(errorMessage).toContain(errorMsg);
+    expect(errorMessage).toContain(errorMsg);
 });

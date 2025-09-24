@@ -9,7 +9,7 @@ let inventoryPage: InventoryPage;
 
 
 Given('I am logged in as a standard user', async function (this: any) {
-    // Write code here that turns the phrase above into concrete actions
+  this.logger.info('Starting scenario...');
     loginPage = new LoginPage(this.page);
     await loginPage.navigateToLoginPage();
     await loginPage.fillLogin("standard_user", "secret_sauce");
@@ -31,6 +31,5 @@ Then('product prices should be in ascending order', async function () {
 
 Then('product names should be in descending order', async function () {
     let names = await inventoryPage.getAllProductNames();
-    let sortedNames = [...names].sort().reverse();
-    expect(names).toEqual(sortedNames);
+    expect(names).toEqual([...names].sort().reverse());
 });

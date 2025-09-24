@@ -15,10 +15,10 @@ export default class LoginPage extends BasePage{
 
 
     private Elements = {
-        username: "#user-name",
+        username: this.page.locator("#user-name"),
         password: "#password",
-        login: "#login-button",
-        errorMsg: "h3[data-test='error']"
+        login: this.page.locator("#login-button"),
+        errorMsg: this.page.locator("h3[data-test='error']")
     }
 
     getElements(){
@@ -37,18 +37,18 @@ export default class LoginPage extends BasePage{
 
     async fillLogin(username: string, password: string) {
         await this.page.waitForLoadState();
-        await this.page.locator(this.Elements.username).fill(username);
+        await this.Elements.username.fill(username);
         await this.base.fillText(this.Elements.password, password);
         console.log("login filled");
     }
 
     async clickLogin() {
-        await this.page.locator(this.Elements.login).click();
+        await this.Elements.login.click();
         console.log("Login clicked");
     }
 
     async getErrorMessage() {
-            return this.page.locator(this.Elements.errorMsg).innerText();
+            return this.Elements.errorMsg.innerText();
     }
 
 }

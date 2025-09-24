@@ -26,6 +26,5 @@ When('I open the cart', async function (this: any) {
 });
 
 Then('the cart should contain {string}', async function (name) {
-  const itemNames = await cartPage.itemNames();
-  expect(itemNames).toContain(name);
+  expect(await cartPage.itemNames()).toContain(name);
 });

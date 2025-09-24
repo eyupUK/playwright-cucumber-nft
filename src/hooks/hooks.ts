@@ -1,4 +1,3 @@
-// src/hooks/hooks.ts
 import {
   Before,
   After,
@@ -11,7 +10,6 @@ import {
 import { devices } from '@playwright/test';
 import { PWWorld } from './world';
 import { getEnv } from '../helper/env/env';
-import path from 'node:path';
 const fs = require("fs-extra");
 
 type BrowserName = 'chromium' | 'firefox' | 'webkit';
@@ -80,7 +78,7 @@ After(async function (this: PWWorld, { result, pickle }: ITestCaseHookParameter)
 
   if (failed) {
     const scenarioName = (pickle.name + '_' + pickle.id).replace(/[^a-zA-Z0-9-_]/g, '_');
-    
+
     const buffer = await this.page.screenshot({ fullPage: true, path: `test-results/screenshots/${scenarioName}_failed.png`, type: 'png' });
 
     //  Attach to Cucumber (shows in reports that support embeddings)

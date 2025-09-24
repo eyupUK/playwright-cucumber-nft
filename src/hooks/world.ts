@@ -1,4 +1,3 @@
-// src/hooks/world.ts
 import { IWorld } from '@cucumber/cucumber';
 import {
   chromium, firefox, webkit,
@@ -6,6 +5,8 @@ import {
   devices, request, APIRequestContext,
 } from '@playwright/test';
 import path from 'node:path';
+import { options } from "../helper/util/logger";
+
 
 export type WorldParams = {
   scenarioName?: string;
@@ -18,6 +19,7 @@ export type WorldParams = {
   isApiOnly?: boolean;
   baseURL?: string;
   defaultHeaders?: Record<string, string>;
+  logger?: any;
 };
 
 export class PWWorld implements IWorld{
@@ -33,6 +35,7 @@ export class PWWorld implements IWorld{
   api?: APIRequestContext;
 
   async init(params: WorldParams = {}) {
+    this.logger = options(params.scenarioName, "debug");
     if (params.isApiOnly) {
       this.api = await request.newContext({
         baseURL: params.baseURL,
