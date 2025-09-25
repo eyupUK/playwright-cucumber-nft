@@ -1,0 +1,17 @@
+# name: k6-cloud
+# on: [push]
+
+# jobs:
+#   perf:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - uses: grafana/setup-k6-action@v1
+#       - uses: grafana/run-k6-action@v1
+#         with:
+#           path: src/performance/*.js         # or glob like tests/*.js
+#           cloud: true             # run in Grafana Cloud
+#         env:
+#           K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
+#           # Optional: K6_VUS, K6_DURATION, etc.

@@ -11,21 +11,21 @@ Before setting up and running the project, ensure you have the following install
    Download and install from [Node.js official website](https://nodejs.org/).
 
 2. **npm** (comes with Node.js)  
-   Verify installation by running:
+
    ```bash
     node -v
     npm -v
    ```
-   
 
 3. **Playwright Browsers**  
-   Install Playwright browsers using:
+
    ```bash
    npx playwright install
    ```
 
 4. **Allure Commandline** (for generating reports)  
     Install globally using:
+
    ```bash
    npm install -g allure-commandline --save-dev
    npm install --save-dev @cucumber/cucumber @cucumber/messages allure-cucumberjs
@@ -33,6 +33,15 @@ Before setting up and running the project, ensure you have the following install
 
 5. **Git** (optional, for cloning the repository)  
    Download and install from [Git official website](https://git-scm.com/).
+
+6. **K6**
+
+- [k6](https://k6.io/docs/getting-started/installation/) installed on your system (`brew install k6` on Mac)
+- A valid WeatherAPI key (set as an environment variable)
+
+```BASH
+brew install k6
+```
 
 ---
 
@@ -75,7 +84,7 @@ Before setting up and running the project, ensure you have the following install
 npm i
 ```
 
-4.  to install the browsers
+4. to install the browsers
 
 ```bash
 npx playwright install
@@ -89,7 +98,7 @@ npm run test
 
 6. To run a particular test, change:
 
-```
+```bash
   paths: [
             "src/test/features/featurename.feature"
          ]
@@ -150,6 +159,56 @@ npm run test:qa
 
 ![env](images/env.png)
 
+## Performance Testing
+
+1. **Run the k6 test script:**
+
+   ```bash
+   WEATHERAPI_KEY=your_actual_key k6 run --summary-export=weather-api-result.json src/performance/weather-api.k6.js
+   ```
+
+   - This will execute the test and export a summary JSON file.
+
+- **Cloud execution on Grafana:**
+How to generate a k6 API token in Grafana Cloud
+- Log in to your Grafana Cloud account, and select the Stack you’re using. 
+
+- In the left menu navigate to: Testing & Synthetics → Performance → Settings 
+
+- In the Settings page, there should be a section called Access (or similar) where you can see Personal token. You can view / copy / regenerate your personal API token there. 
+
+- (Optional) If you have the right permissions (admin), you can also generate a Stack token (applies across the stack) under the same “Settings → Access / Stack token” section. 
+
+- Once you have the token, you can run:
+
+``` bash
+k6 cloud login --token <YOUR_TOKEN>
+```
+
+- To execute on Grafana:
+
+  ```bash
+  npm run k6:cloud
+  ```
+
+- **Grafana Cloud Visualization (with local execution):**
+
+  ```bash
+  npm run k6:grafana
+  ```
+
+- See `.github/workflows/k6-grafana.yml` for CI integration.
+
+### Customizing the Test
+
+- Edit `src/performance/weather-api.k6.js` to change the number of virtual users (`vus`), duration, cities, or endpoints.
+
+- You can parameterize the API key and base URL using environment variables:
+
+  ```bash
+  WEATHERAPI_KEY=your_actual_key WEATHERAPI_BASEURL=https://api.weatherapi.com/v1 k6 run src/performance/weather-api.k6.js
+  ```
+
 ### Folder structure
 
 0. `src\pages` -> All the page (UI screen)
@@ -168,7 +227,7 @@ npm run test:qa
 
 ## Folder Structure
 
-```
+```bash
 Playwright-Cucumber-TS
 ├── .github
 │   └── workflows
