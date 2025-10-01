@@ -10,5 +10,5 @@ assets
 index.html
 .DS_Store
 allure-results
-
+weather-api-result.json
 

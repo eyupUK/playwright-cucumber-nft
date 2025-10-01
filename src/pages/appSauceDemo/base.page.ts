@@ -23,4 +23,17 @@ export abstract class BasePage {
   async expectUrlContains(fragment: string) {
     await expect(this.page).toHaveURL(new RegExp(fragment));
   }
+
+
+  async clickWithRetry(locator: Locator, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        await locator.click();
+        return;
+      } catch (error) {
+        if (i === maxRetries - 1) throw error;
+        await this.page.waitForTimeout(1000);
+      }
+    }
+  }
 }

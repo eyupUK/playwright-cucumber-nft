@@ -32,13 +32,13 @@ Before(async function (this: PWWorld, { pickle }: ITestCaseHookParameter) {
   // timeouts
   const tagTimeout = parseTimeoutMs(String(tags.get('@timeout') || ''));
   const defaultMs = tagTimeout ?? (tags.has('@slow') ? 120_000 : 30_000);
-  //setDefaultTimeout(defaultMs);
+  setDefaultTimeout(defaultMs);
 
   // @api scenarios: no browser/page
   if (tags.has('@api')) {
     await this.init({
       isApiOnly: true,
-      baseURL: (process.env.BASE_URL as string | undefined) || undefined,
+      baseURL: (process.env.BASE_URL) || undefined,
       defaultHeaders: { 'Content-Type': 'application/json' },
     });
     return;
@@ -58,7 +58,7 @@ Before(async function (this: PWWorld, { pickle }: ITestCaseHookParameter) {
     browser,
     device,
     storageState,
-    headless: process.env.HEAD === 'true' ? false : true,
+    headless: process.env.HEAD !== 'true',
   });
 
   // Apply Playwright defaults for this scenario
@@ -85,7 +85,8 @@ After(async function (this: PWWorld, { result, pickle }: ITestCaseHookParameter)
     await this.attach?.(buffer, 'image/png');
   }
   else {
-    let videoPath: string | any = this.page.video() ? await this.page.video()?.path() : null;
+    const video = this.page.video();
+    const videoPath: string | null = video ? await video.path() : null;
     // delete the video if the scenario is passed
     if (videoPath) {
       fs.unlink(videoPath);
@@ -114,9 +115,14 @@ function isDeviceName(v: unknown): v is DeviceName {
 }
 function parseTimeoutMs(s?: string): number | undefined {
   if (!s) return undefined;
-  const m = s.trim().toLowerCase().match(/^(\d+)(ms|s|m)?$/);
+  const re = /^(\d+)(ms|s|m)?$/;
+  const m = re.exec(s.trim().toLowerCase());
   if (!m) return undefined;
   const n = Number(m[1]);
   const unit = m[2] ?? 'ms';
-  return unit === 'ms' ? n : unit === 's' ? n * 1000 : n * 60000;
+  let multiplier: number;
+  if (unit === 'ms') multiplier = 1;
+  else if (unit === 's') multiplier = 1000;
+  else multiplier = 60000;
+  return n * multiplier;
 }

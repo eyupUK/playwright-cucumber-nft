@@ -1,4 +1,4 @@
-import { Given, When, Then, setDefaultTimeout } from "@cucumber/cucumber";
+import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { CsvDataLoader } from "../../../../helper/util/CsvDataLoader";
 import { assertCurrentTypes, assertForecastDays } from '../../../../helper/util/jsonAssert';
@@ -45,7 +45,7 @@ Then('the response matches schema {string}', async function (schemaPath) {
 
 Then('the {string} equals {string} if provided', async function (actualDataPath, expectedData) {
   if (expectedData) {
-    const actualValue = actualDataPath.split('.').reduce((obj: any, key: string) => obj && obj[key], payload);
+    const actualValue = actualDataPath.split('.').reduce((obj: any, key: string) => obj?.[key], payload);
     expect(actualValue).toBe(expectedData);
   }
   else {

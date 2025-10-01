@@ -12,7 +12,6 @@ export function options(scenarioName?: string, logLevel: string = "info") {
             format.errors({ stack: true }), // Include stack traces for errors
             format.align(),
             format.printf(info => {
-                const label = info.label ? `[${info.label}]` : '';
                 return `${info.level}: ${info.timestamp}: ${info.message}`;
             })
         ),

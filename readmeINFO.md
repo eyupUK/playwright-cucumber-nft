@@ -84,13 +84,14 @@ brew install k6
 npm i
 ```
 
-4. to install the browsers
+4. To install the browsers
 
 ```bash
 npx playwright install
 ```
 
-5. to execute the tests (was by deafault set to **staging** environment in .env.staging);
+5. To execute the tests (was by deafault set to
+**staging** environment in .env.staging);
 
 ```bash
 npm run test
@@ -171,13 +172,13 @@ npm run test:qa
 
 - **Cloud execution on Grafana:**
 How to generate a k6 API token in Grafana Cloud
-- Log in to your Grafana Cloud account, and select the Stack you’re using. 
+- Log in to your Grafana Cloud account, and select the Stack you’re using.
 
-- In the left menu navigate to: Testing & Synthetics → Performance → Settings 
+- In the left menu navigate to: Testing & Synthetics → Performance → Settings
 
-- In the Settings page, there should be a section called Access (or similar) where you can see Personal token. You can view / copy / regenerate your personal API token there. 
+- In the Settings page, there should be a section called Access (or similar) where you can see Personal token. You can view / copy / regenerate your personal API token there.
 
-- (Optional) If you have the right permissions (admin), you can also generate a Stack token (applies across the stack) under the same “Settings → Access / Stack token” section. 
+- (Optional) If you have the right permissions (admin), you can also generate a Stack token (applies across the stack) under the same “Settings → Access / Stack token” section.
 
 - Once you have the token, you can run:
 

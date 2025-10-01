@@ -1,8 +1,10 @@
 import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
+import { options } from './logger';
 
 let MAX_RETRIES = 1;
 
 export default class APIUtils {
+
     // Utility function to make HTTP requests
     public static async sendRequest(
         base: string,
@@ -14,6 +16,7 @@ export default class APIUtils {
     ): Promise<AxiosResponse> {
         const url = `${base}${endpoint}`;
         console.log('Request URL:', url);
+        const logger = options(method + '_' + url, "debug");
 
         // Prepare the axios configuration
         const config: AxiosRequestConfig = {
@@ -23,14 +26,8 @@ export default class APIUtils {
             headers,         // Request headers
             params: queryParams // Query parameters (only for GET, DELETE, etc.)
         };
-
-        try {
-            const response = await axios(config);
-            return response;
-        } catch (error) {
-            // console.error('Error in request:', error);
-            throw error;  // Ensure the error is rethrown so the function always returns a value or throws
-        }
+        logger.debug(`Request Config: ${JSON.stringify(config)}`);
+        return await axios(config);
     }
 }
 
