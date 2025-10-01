@@ -1,19 +1,14 @@
 import { expect, Locator, Page } from "@playwright/test";
-import PlaywrightWrapper from "../../helper/wrapper/PlaywrightWrapper";
-import { faker } from '@faker-js/faker';
 import { BasePage } from "./base.page";
 
 
 export default class CheckoutInfoPage extends BasePage {
-    private base: PlaywrightWrapper;
 
     constructor( page: Page) {
         super(page);    
-        this.base = new PlaywrightWrapper(page);
     }
 
-
-    private Elements = {
+    private readonly Elements = {
         title: this.page.locator('.title'),
         firstName: this.page.locator('#first-name'),
         lastName: this.page.locator('#last-name'),
