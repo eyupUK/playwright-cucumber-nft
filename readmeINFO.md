@@ -114,7 +114,7 @@ npm run test --tags="@cart"
 8. Run scenarios on a specific browser, assigning **chrome** (chromium), **firefox** or **webkit** (safari) to the key browser:
 
 ```bash
-BROWSER=firefox npm run test --tags="cart"
+BROWSER=firefox npm run test --tags="@cart"
 ```
 
 if browser kept empty, the framework fetch the browser type from .env file.
@@ -123,7 +123,7 @@ If the browser is empty or unassigned in .env file, browserManager.ts will assig
 9. Rerun failed sceanarios after the test execution by
 
 ```bash
-npm run test --tags="api"
+npm run test --tags="@api"
 npm run test:failed
 ```
 
