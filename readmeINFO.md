@@ -137,7 +137,7 @@ npm install --save-dev @cucumber/cucumber @cucumber/messages allure-cucumberjs
 11. To generate Allure Report:
 
 ```bash
-allure serve allure-results
+allure serve
 ```
 
 12. To run parallel:
@@ -170,8 +170,9 @@ npm run test:qa
 
    - This will execute the test and export a summary JSON file.
 
-- **Cloud execution on Grafana:**
-How to generate a k6 API token in Grafana Cloud
+**Cloud execution on Grafana**
+
+How to generate a k6 API token in Grafana Cloud:
 - Log in to your Grafana Cloud account, and select the Stack you’re using.
 
 - In the left menu navigate to: Testing & Synthetics → Performance → Settings
