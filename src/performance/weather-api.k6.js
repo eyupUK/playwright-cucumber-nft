@@ -5,8 +5,12 @@ import { check, sleep, group } from 'k6';
 const defaultOptions = {
     vus: 10,
     duration: '30s',
+    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
     thresholds: {
-        http_req_duration: ['p(95)<1000'], // 95% of requests should be below 1s
+        http_req_duration: [
+            'p(95)<1000',  // 95% of requests should be below 1s
+            'p(99)<1500'   // 99% of requests should be below 1.5s
+        ],
         http_req_failed: ['rate<0.5'], // allow up to 50% failures for debugging
     },
 };
@@ -20,10 +24,17 @@ const loadTestOptions = {
         { duration: '5m', target: 50 }, // Maintain 50 users for 5 minutes
         { duration: '2m', target: 0 },  // Ramp down to 0 users over 2 minutes
     ],
+    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
     thresholds: {
-        http_req_duration: ['p(95)<2000'], // 95% of requests should be below 2s
+        http_req_duration: [
+            'p(95)<2000',  // 95% of requests should be below 2s
+            'p(99)<3000'   // 99% of requests should be below 3s
+        ],
         http_req_failed: ['rate<0.1'],     // Less than 10% of requests should fail
-        'http_req_duration{scenario:load}': ['p(95)<1500'],
+        'http_req_duration{scenario:load}': [
+            'p(95)<1500',  // 95% of load scenario requests should be below 1.5s
+            'p(99)<2500'   // 99% of load scenario requests should be below 2.5s
+        ],
     },
 };
 
@@ -40,10 +51,17 @@ const stressTestOptions = {
         { duration: '5m', target: 200 },  // Maintain 200 users
         { duration: '10m', target: 0 },   // Ramp down to 0 users
     ],
+    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
     thresholds: {
-        http_req_duration: ['p(95)<5000'], // 95% of requests should be below 5s
+        http_req_duration: [
+            'p(95)<5000',  // 95% of requests should be below 5s
+            'p(99)<7000'   // 99% of requests should be below 7s
+        ],
         http_req_failed: ['rate<0.3'],     // Less than 30% of requests should fail
-        'http_req_duration{scenario:stress}': ['p(95)<3000'],
+        'http_req_duration{scenario:stress}': [
+            'p(95)<3000',  // 95% of stress scenario requests should be below 3s
+            'p(99)<5000'   // 99% of stress scenario requests should be below 5s
+        ],
     },
 };
 
@@ -57,8 +75,12 @@ const spikeTestOptions = {
         { duration: '1m', target: 10 },   // Back to normal
         { duration: '2m', target: 0 },    // Ramp down
     ],
+    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
     thresholds: {
-        http_req_duration: ['p(95)<3000'], // 95% of requests should be below 3s
+        http_req_duration: [
+            'p(95)<3000',  // 95% of requests should be below 3s
+            'p(99)<5000'   // 99% of requests should be below 5s
+        ],
         http_req_failed: ['rate<0.4'],     // Less than 40% of requests should fail
     },
 };

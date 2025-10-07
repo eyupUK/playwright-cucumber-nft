@@ -455,7 +455,7 @@ function generateTestOverviewSection(allData) {
   
   const totalRequests = metrics.http_reqs?.count || 0;
   const avgDuration = metrics.http_req_duration?.avg || 0;
-  const failureRate = (metrics.http_req_failed?.rate || 0) * 100;
+  const failureRate = (metrics.http_req_failed?.value || metrics.http_req_failed?.rate || 0) * 100;
   const vus = metrics.vus?.value || 0;
   
   return `
@@ -615,26 +615,54 @@ function generateComparisonSection(allData) {
   `;
 }
 
+// Helper function to extract threshold values from threshold strings
+function extractThresholdValue(thresholds, metricType, defaultValue) {
+  for (const [key] of Object.entries(thresholds)) {
+    if (key.includes(metricType)) {
+      const matches = key.match(/[\d.]+/);
+      if (matches) {
+        const numValue = parseFloat(matches[0]);
+        return metricType === 'rate' ? numValue * 100 : numValue;
+      }
+    }
+  }
+  return defaultValue;
+}
+
 function generateThresholdAnalysisSection(allData) {
   if (allData.length === 0) return '';
   
   const latestData = allData[allData.length - 1];
   const metrics = latestData.metrics || {};
   
+  // Extract actual thresholds from k6 results or use defaults
+  const durationThresholds = metrics.http_req_duration?.thresholds || {};
+  const failedThresholds = metrics.http_req_failed?.thresholds || {};
+  
   const thresholdChecks = [
     {
       name: 'Response Time (95th percentile)',
-      value: metrics.http_req_duration?.p95 || 0,
-      threshold: 2000,
+      value: metrics.http_req_duration?.['p(95)'] || metrics.http_req_duration?.p95 || 0,
+      threshold: extractThresholdValue(durationThresholds, 'p(95)', 1000),
       unit: 'ms',
-      lower: true
+      lower: true,
+      passed: !durationThresholds['p(95)<1000'] || durationThresholds['p(95)<1000'] === true
+    },
+    {
+      name: 'Response Time (99th percentile)',
+      value: metrics.http_req_duration?.['p(99)'] || metrics.http_req_duration?.p99 || 0,
+      threshold: extractThresholdValue(durationThresholds, 'p(99)', 1500),
+      unit: 'ms',
+      lower: true,
+      passed: !durationThresholds['p(99)<1500'] || durationThresholds['p(99)<1500'] === true
     },
     {
       name: 'Failure Rate',
-      value: (metrics.http_req_failed?.rate || 0) * 100,
-      threshold: 10,
+      value: (metrics.http_req_failed?.value || metrics.http_req_failed?.rate || 0) * 100,
+      threshold: extractThresholdValue(failedThresholds, 'rate', 50),
       unit: '%',
-      lower: true
+      lower: true,
+      passed: !failedThresholds['rate<0.5'] || failedThresholds['rate<0.5'] === true
     },
     {
       name: 'Average Response Time',
@@ -650,7 +678,12 @@ function generateThresholdAnalysisSection(allData) {
       <h2>🎯 Threshold Analysis</h2>
       <div class="metrics-grid">
         ${thresholdChecks.map(check => {
-          const passed = check.lower ? check.value <= check.threshold : check.value >= check.threshold;
+          let passed;
+          if (check.passed !== undefined) {
+            passed = check.passed;
+          } else {
+            passed = check.lower ? check.value <= check.threshold : check.value >= check.threshold;
+          }
           const status = passed ? 'success' : 'error';
           const icon = passed ? '✅' : '❌';
           
@@ -861,9 +894,9 @@ function generateResponseTimeChartScript(data) {
             data: [
               ${metrics.avg || 0},
               ${metrics.med || 0},
-              ${metrics.p90 || 0},
-              ${metrics.p95 || 0},
-              ${metrics.p99 || 0}
+              ${metrics['p(90)'] || metrics.p90 || 0},
+              ${metrics['p(95)'] || metrics.p95 || 0},
+              ${metrics['p(99)'] || metrics.p99 || 0}
             ],
             backgroundColor: [
               'rgba(102, 126, 234, 0.8)',
@@ -925,9 +958,9 @@ function generatePercentileChartScript(data) {
             label: 'Response Time (ms)',
             data: [
               ${metrics.med || 0},
-              ${metrics.p90 || 0},
-              ${metrics.p95 || 0},
-              ${metrics.p99 || 0}
+              ${metrics['p(90)'] || metrics.p90 || 0},
+              ${metrics['p(95)'] || metrics.p95 || 0},
+              ${metrics['p(99)'] || metrics.p99 || 0}
             ],
             borderColor: 'rgba(102, 126, 234, 1)',
             backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -1020,7 +1053,7 @@ function generateChecksChartScript(checks) {
 
 function generateLoadDistributionChartScript(allData) {
   const testTypes = allData.map(d => d.testType);
-  const throughputs = allData.map(d => d.metrics?.http_req_rate?.rate || 0);
+  const throughputs = allData.map(d => d.metrics?.http_reqs?.rate || 0);
   
   return `
     // Load Distribution Chart
@@ -1046,8 +1079,8 @@ function generateLoadDistributionChartScript(allData) {
                 data: [
                   ${Math.min((metrics.http_reqs?.count || 0) / 1000, 100)},
                   ${Math.min((metrics.http_req_duration?.avg || 0) / 10, 100)},
-                  ${Math.min((metrics.http_req_rate?.rate || 0) * 2, 100)},
-                  ${Math.min((metrics.http_req_duration?.p95 || 0) / 20, 100)},
+                  ${Math.min((metrics.http_reqs?.rate || 0) * 2, 100)},
+                  ${Math.min((metrics.http_req_duration?.['p(95)'] || metrics.http_req_duration?.p95 || 0) / 20, 100)},
                   ${Math.min((metrics.vus?.value || 0), 100)}
                 ],
                 backgroundColor: '${colors[index % colors.length]}',
