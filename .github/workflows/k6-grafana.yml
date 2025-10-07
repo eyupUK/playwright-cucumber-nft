@@ -43,7 +43,7 @@ jobs:
         uses: grafana/run-k6-action@v1
         with:
           path: src/performance/weather-api.k6.js
-          flags: --summary-export=k6-results.json --out json=k6-raw-results.json
+          flags: --summary-export=k6-results.json --out json=k6-raw-results.json --log-output=stdout
         env:
           WEATHERAPI_KEY: ${{ secrets.WEATHERAPI_KEY }}
           WEATHERAPI_BASEURL: https://api.weatherapi.com/v1
@@ -78,6 +78,46 @@ jobs:
             echo "❌ No k6 result files found to generate report"
           fi
 
+      - name: Sanitize log files for artifact upload
+        if: always()
+        run: |
+          # Create logs directory if it doesn't exist
+          mkdir -p logs
+          
+          # Find and rename any log files with invalid characters for artifact upload
+          echo "🔍 Checking for log files with invalid characters..."
+          
+          # Check current directory for any files that might have been created by k6
+          find . -maxdepth 2 -name "*http*" -o -name "*.log" | while read -r file; do
+            if [ -f "$file" ]; then
+              # Get the basename and directory
+              dir=$(dirname "$file")
+              basename=$(basename "$file")
+              
+              # Replace invalid characters: : < > | * ? " \r \n with underscores
+              sanitized=$(echo "$basename" | sed 's/[:<>|*?"[:cntrl:]]/_/g')
+              
+              if [ "$basename" != "$sanitized" ]; then
+                echo "📝 Moving and renaming: $file -> logs/$sanitized"
+                mv "$file" "logs/$sanitized"
+              else
+                # Move to logs directory for organization
+                if [ "$dir" != "./logs" ] && [ "$dir" != "logs" ]; then
+                  echo "📁 Moving: $file -> logs/$basename"
+                  mv "$file" "logs/$basename"
+                fi
+              fi
+            fi
+          done
+          
+          # List final log files
+          if [ -d logs ] && [ "$(ls -A logs)" ]; then
+            echo "✅ Log files ready for artifact upload:"
+            ls -la logs/
+          else
+            echo "ℹ️ No log files found"
+          fi
+
       - name: Upload performance report
         if: always()
         uses: actions/upload-artifact@v4
@@ -85,6 +125,17 @@ jobs:
           name: k6-performance-report
           path: k6-performance-report.html
           retention-days: 30
+
+      - name: Upload sanitized log files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-performance-logs
+          path: |
+            logs/
+            !logs/.gitkeep
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Generate performance summary
         if: always()
