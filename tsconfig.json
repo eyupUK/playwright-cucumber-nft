@@ -4,7 +4,7 @@
     "esModuleInterop": true,
     "strict": true,
     "strictNullChecks": true,
-    "lib": ["es2021"],
+    "lib": ["es2021", "dom"],
     "typeRoots": ["./node_modules/@types", "src/helper/types"],
     "resolveJsonModule": true,
     "paths": {
@@ -15,7 +15,6 @@
     "module": "commonjs",
     "noImplicitAny": true,
     "skipLibCheck": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
-  }
+    "outDir": "./dist"
+    }
 }

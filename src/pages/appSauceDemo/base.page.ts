@@ -186,11 +186,15 @@ export abstract class BasePage {
   }
 
   async scrollToTop(): Promise<void> {
-    await this.page.evaluate(() => window.scrollTo(0, 0));
+    await this.page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
   }
 
   async scrollToBottom(): Promise<void> {
-    await this.page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await this.page.evaluate(() => {
+      window.scrollTo(0, document.body.scrollHeight);
+    });
   }
 
   // Hover methods

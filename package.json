@@ -17,7 +17,8 @@
     "test:failed": "cross-env ENV=staging cucumber-js --config=config/cucumber.cjs --format ./config/allure-reporter.cjs -p rerun @rerun.txt",
     "k6:local": "k6 run --out json=weather-api-result.json src/performance/weather-api.k6.js",
     "k6:cloud": "k6 cloud run src/performance/weather-api.k6.js",
-    "k6:grafana":"k6 cloud run --local-execution src/performance/weather-api.k6.js"
+    "k6:grafana":"k6 cloud run --local-execution src/performance/weather-api.k6.js",
+    "clean":"rm -rf ./reports && rm -rf ./allure-results && rm -rf ./test-results && rm -rf ./playwright-report && rm -rf ./weather-api-result.json && rm -rf ./@rerun.txt"
   },
   "keywords": [],
   "author": "EyupUK",

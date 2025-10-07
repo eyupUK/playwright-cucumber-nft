@@ -12,7 +12,7 @@ export default class LoginPage extends BasePage{
 
     private readonly Elements = {
         username: this.page.locator("#user-name"),
-        password: "#password",
+        password: this.page.locator("#password"),
         login: this.page.locator("#login-button"),
         errorMsg: this.page.locator("h3[data-test='error']")
     }
@@ -34,7 +34,7 @@ export default class LoginPage extends BasePage{
     async fillLogin(username: string, password: string) {
         await this.page.waitForLoadState();
         await this.Elements.username.fill(username);
-        await this.base.fillText(this.Elements.password, password);
+        await this.Elements.password.fill(password);
         console.log("login filled");
     }
 
