@@ -1,17 +1,71 @@
-# name: k6-cloud
-# on: [push]
+name: k6 Performance Testing
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Run performance tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_duration:
+        description: 'Test duration (e.g., 30s, 5m)'
+        required: false
+        default: '30s'
+      virtual_users:
+        description: 'Number of virtual users'
+        required: false
+        default: '10'
 
-# jobs:
-#   perf:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
+jobs:
+  performance-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-#       - uses: grafana/setup-k6-action@v1
-#       - uses: grafana/run-k6-action@v1
-#         with:
-#           path: src/performance/*.js         # or glob like tests/*.js
-#           cloud: true             # run in Grafana Cloud
-#         env:
-#           K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
-#           # Optional: K6_VUS, K6_DURATION, etc.
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 local test
+        uses: grafana/run-k6-action@v1
+        with:
+          path: src/performance/weather-api.k6.js
+          flags: --summary-export=k6-results.json --out json=k6-raw-results.json
+        env:
+          WEATHERAPI_KEY: ${{ secrets.WEATHERAPI_KEY }}
+          WEATHERAPI_BASEURL: https://api.weatherapi.com/v1
+          K6_VUS: ${{ github.event.inputs.virtual_users || '10' }}
+          K6_DURATION: ${{ github.event.inputs.test_duration || '30s' }}
+
+      - name: Run k6 cloud test
+        if: github.ref == 'refs/heads/main'
+        run: k6 cloud src/performance/weather-api.k6.js
+        env:
+          K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
+          WEATHERAPI_KEY: ${{ secrets.WEATHERAPI_KEY }}
+          WEATHERAPI_BASEURL: https://api.weatherapi.com/v1
+
+      - name: Upload k6 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-performance-results
+          path: |
+            k6-results.json
+            k6-raw-results.json
+          retention-days: 7
+
+      - name: Generate performance report
+        if: always()
+        run: |
+          echo "## k6 Performance Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f k6-results.json ]; then
+            echo "Performance test completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Performance test failed or no results generated" >> $GITHUB_STEP_SUMMARY
+          fi

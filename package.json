@@ -15,10 +15,12 @@
     "test:local": "cross-env ENV=local cucumber-js --config=config/cucumber.cjs --format ./config/allure-reporter.cjs || true",
     "posttest": "npx ts-node src/helper/report/report.ts",
     "test:failed": "cross-env ENV=staging cucumber-js --config=config/cucumber.cjs --format ./config/allure-reporter.cjs -p rerun @rerun.txt",
-    "k6:local": "k6 run --out json=weather-api-result.json src/performance/weather-api.k6.js",
-    "k6:cloud": "k6 cloud run src/performance/weather-api.k6.js",
-    "k6:grafana":"k6 cloud run --local-execution src/performance/weather-api.k6.js",
-    "clean":"rm -rf ./reports && rm -rf ./allure-results && rm -rf ./test-results && rm -rf ./playwright-report && rm -rf ./weather-api-result.json && rm -rf ./@rerun.txt"
+    "k6:local": "k6 run --summary-export=k6-results.json --out json=k6-raw-results.json src/performance/weather-api.k6.js",
+    "k6:cloud": "k6 cloud src/performance/weather-api.k6.js",
+    "k6:grafana": "k6 run --out cloud src/performance/weather-api.k6.js",
+    "k6:report": "node generate-k6-report.js",
+    "open:k6-report": "open k6-performance-report.html",
+    "clean": "rm -rf ./reports && rm -rf ./allure-results && rm -rf ./test-results && rm -rf ./playwright-report && rm -rf ./weather-api-result.json && rm -rf ./k6-results.json && rm -rf ./k6-raw-results.json && rm -rf ./k6-performance-report.html && rm -rf ./@rerun.txt"
   },
   "keywords": [],
   "author": "EyupUK",
@@ -44,6 +46,7 @@
     "@exodus/schemasafe": "^1.3.0",
     "axios": "^1.12.0",
     "csv-parse": "^6.1.0",
+    "k6-html-reporter": "^3.1.0",
     "multiple-cucumber-html-reporter": "^3.8.0",
     "reflect-metadata": "^0.2.2"
   }

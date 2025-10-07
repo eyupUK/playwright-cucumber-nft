@@ -1,7 +1,21 @@
-# Playwright + Cucumber + TS
+# Playwright + Cucumber + TypeScript Test Automation Framework
 
-Cucumber is a popular behavior-driven development (BDD) tool that allows developers and stakeholders to collaborate on defining and testing application requirements in a human-readable format.
-TypeScript is a powerful superset of JavaScript that adds optional static typing, making it easier to catch errors before runtime. By combining these two tools, we can create more reliable and maintainable tests.
+A comprehensive, production-ready test automation framework combining **Playwright**, **Cucumber**, and **TypeScript** for modern web application testing. This framework supports UI testing, API testing, and performance testing with k6 integration.
+
+## 🎯 Framework Overview
+
+**Cucumber** enables behavior-driven development (BDD) with human-readable test scenarios that facilitate collaboration between developers, testers, and stakeholders. **TypeScript** provides static typing for improved code quality, better IDE support, and enhanced maintainability. **Playwright** offers reliable cross-browser automation with modern web standards support.
+
+## ✨ Key Features
+
+- 🎭 **Cross-browser testing** (Chromium, Firefox, WebKit)
+- 🔄 **API & UI test automation** with unified reporting
+- 📊 **Performance testing** with k6 and Grafana Cloud integration
+- 🌍 **Multi-environment support** (Dev, QA, Staging, Prod)
+- 📈 **Rich reporting** (Allure, HTML, JSON) with screenshots/videos
+- 🚀 **Parallel execution** for faster test runs
+- 🔒 **Type-safe development** with TypeScript
+- 📝 **BDD approach** with Cucumber for readable test scenarios
 
 ## Prerequisites
 
@@ -160,142 +174,193 @@ npm run test:qa
 
 ![env](images/env.png)
 
-## Performance Testing
+## 🚀 Performance Testing with k6
 
-1. **Run the k6 test script:**
+### Local Performance Testing
 
-   ```bash
-   WEATHERAPI_KEY=your_actual_key k6 run --summary-export=weather-api-result.json src/performance/weather-api.k6.js
-   ```
-
-   - This will execute the test and export a summary JSON file.
-
-**Cloud execution on Grafana**
-
-How to generate a k6 API token in Grafana Cloud:
-- Log in to your Grafana Cloud account, and select the Stack you’re using.
-
-- In the left menu navigate to: Testing & Synthetics → Performance → Settings
-
-- In the Settings page, there should be a section called Access (or similar) where you can see Personal token. You can view / copy / regenerate your personal API token there.
-
-- (Optional) If you have the right permissions (admin), you can also generate a Stack token (applies across the stack) under the same “Settings → Access / Stack token” section.
-
-- Once you have the token, you can run:
-
-``` bash
-k6 cloud login --token <YOUR_TOKEN>
-```
-
-- To execute on Grafana:
-
-  ```bash
-  npm run k6:cloud
-  ```
-
-- **Grafana Cloud Visualization (with local execution):**
-
-  ```bash
-  npm run k6:grafana
-  ```
-
-- See `.github/workflows/k6-grafana.yml` for CI integration.
-
-### Customizing the Test
-
-- Edit `src/performance/weather-api.k6.js` to change the number of virtual users (`vus`), duration, cities, or endpoints.
-
-- You can parameterize the API key and base URL using environment variables:
-
-  ```bash
-  WEATHERAPI_KEY=your_actual_key WEATHERAPI_BASEURL=https://api.weatherapi.com/v1 k6 run src/performance/weather-api.k6.js
-  ```
-
-### Folder structure
-
-0. `src\pages` -> All the page (UI screen)
-1. `src\test\features` -> write your features here
-2. `src\test\stepDefs` -> Your step definitions goes here
-3. `src\hooks\hooks.ts` -> Browser setup and teardown logic
-4. `src\hooks\pageFixture.ts` -> Simple way to share the page objects to steps
-5. `src\helper\env` -> Multiple environments are handled
-6. `src\helper\types` -> To get environment code suggestions
-7. `src\helper\report` -> To generate the report
-8. `config/cucumber.js` -> Manages Cucumber options and reports
-9. `package.json` -> Contains all the dependencies
-10. `src\helper\util` -> Read test data from json & logger
-
-**Bonus:** Integrated to GitHub Actions
-
-## Folder Structure
+Run k6 performance tests locally with comprehensive reporting:
 
 ```bash
-Playwright-Cucumber-TS
-├── .github
-│   └── workflows
-│       └── ci.yml
-├── allure-results
-├── src
-│   ├── pages
-│   │   └── examplePage.ts
-│   ├── test
-│   │   ├── features
-│   │   │   └── example.feature
-│   │   ├── stepDefs
-│   │   │   └── exampleSteps.ts
-│   ├── hooks
-│   │   ├── hooks.ts
-│   │   └── pageFixture.ts
-│   ├── helper
-│   │   ├── browsers
-│   │   │   └── browserManager.ts
-│   │   ├── env
-│   │   │   ├── .env.dev
-│   │   │   └── .env.test
-│   │   │   └── .env.staging
-│   │   ├── types
-│   │   │   └── types.ts
-│   │   ├── report
-│   │   │   └── reportGenerator.ts
-│   │   │   └── init.ts
-│   │   ├── util
-│   │       └── test-data
-│   │           └── data.csv
-│   │   │   └── schemas
-│   │           └── schema.json
-│   │   │   └── apiUtils.ts
-│   │   │   └── csvLoader.ts.ts
-│   │   │   └── logger.ts
-│   │   ├── wrapper
-│   │   │   └── wrapper.ts
-│   │   ├── browsers
-│   │   │   └── browserManager.ts
-├── config
-│   └── cucumber.js
-│   └── allure-reporter.cjs
-├── test-results
-│   └── cucumber-report.html
-│   └── cucumber-report.json
-│   └── screenshots
-│   └── videos
-│   └── logs
-│   └── trace
-├── package.json
-└── README.md
+# Run performance test with result exports
+npm run k6:local
+
+# Generate HTML performance report
+npm run k6:report
+
+# Open performance report in browser
+npm run open:k6-report
 ```
 
-![folders](images/folders.png)
+### Cloud Performance Testing
 
-## Reports Samples
+#### Grafana Cloud Setup
 
-![Report1](images/allure1.png)
+**Steps to generate a k6 API token in Grafana Cloud:**
 
-![Report2](images/allure2.png)
+1. Log in to your Grafana Cloud account and select your Stack
+2. Navigate to: **Testing & Synthetics → Performance → Settings**
+3. In the Settings page, locate the **Access** section for Personal tokens
+4. Generate or copy your personal API token
+5. (Optional) Generate a Stack token if you have admin permissions
 
-![Report2](images/allure3.png)
+**Authentication and execution:**
 
-![cucumber](images/cucumber-report.png)
+```bash
+# Authenticate with Grafana Cloud
+k6 cloud login --token <YOUR_TOKEN>
 
-![cucumber0](images/custom-cucumber-report.png)
+# Run tests in Grafana Cloud
+npm run k6:cloud
 
-![cucumber1](images/custom-cucumber-report1.png)
+# Run tests locally with Grafana Cloud visualization
+npm run k6:grafana
+```
+
+**CI/CD Integration:** See `.github/workflows/k6-grafana.yml` for automated performance testing.
+
+### Advanced Performance Testing Configuration
+
+**Customizing test parameters:**
+
+```bash
+# Run with custom parameters
+WEATHERAPI_KEY=your_key WEATHERAPI_BASEURL=https://api.weatherapi.com/v1 npm run k6:local
+
+# Environment variables supported:
+# - WEATHERAPI_KEY: Your Weather API key
+# - WEATHERAPI_BASEURL: API base URL
+# - K6_VUS: Number of virtual users
+# - K6_DURATION: Test duration
+```
+
+**Test script customization:**
+- Edit `src/performance/weather-api.k6.js` to modify:
+  - Virtual users (`vus`) and duration
+  - Test scenarios and endpoints
+  - Cities and forecast days
+  - Performance thresholds
+
+## 📁 Enhanced Folder Structure
+
+```bash
+playwright-cucumber-ts-pom/
+├── .github/workflows/       # CI/CD pipelines
+│   ├── playwright.yml       # UI/API testing workflow
+│   └── k6-grafana.yml      # Performance testing workflow
+├── config/                  # Configuration files
+│   ├── cucumber.cjs         # Cucumber settings
+│   └── allure-reporter.cjs  # Allure reporter config
+├── src/
+│   ├── helper/
+│   │   ├── browsers/        # Browser management utilities
+│   │   ├── env/            # Environment configurations (.env files)
+│   │   ├── report/         # Report generation scripts
+│   │   ├── types/          # TypeScript type definitions
+│   │   ├── util/           # Utilities (API, CSV reader, Logger)
+│   │   └── wrapper/        # Playwright wrapper classes
+│   ├── hooks/              # Cucumber hooks and World setup
+│   │   ├── hooks.ts        # Test setup/teardown logic
+│   │   └── world.ts        # Custom World class
+│   ├── pages/              # Page Object Model classes
+│   │   └── appSauceDemo/   # SauceDemo page objects
+│   ├── performance/        # k6 performance test scripts
+│   │   └── weather-api.k6.js
+│   └── test/
+│       ├── features/       # Cucumber feature files (.feature)
+│       └── stepDefs/       # Step definition implementations
+├── test-results/           # Generated test reports and artifacts
+├── allure-results/         # Allure test results
+├── images/                 # Documentation screenshots
+├── generate-k6-report.js   # k6 report generator
+├── package.json            # Dependencies and npm scripts
+├── tsconfig.json          # TypeScript configuration
+└── README.md              # Project documentation
+```
+
+## 🎯 Advanced Features
+
+### GitHub Actions Integration
+- **Automated UI/API testing** on push and PR
+- **Scheduled performance testing** with k6
+- **Multi-environment deployment** support
+- **Artifact collection** and report generation
+- **Email notifications** for test results
+
+### Enhanced Reporting System
+- **Allure Reports** with timeline and trends
+- **Custom k6 Performance Reports** with metrics visualization
+- **Screenshot/Video capture** on test failures
+- **Structured logging** with Winston
+- **Multi-format outputs** (HTML, JSON, XML)
+
+### Development Productivity
+- **TypeScript IntelliSense** with custom types
+- **Environment-specific configurations**
+- **Parallel test execution** optimization
+- **Retry mechanisms** for flaky tests
+- **Hot-reload development** with watch mode
+
+![Project Structure](images/folders.png)
+
+## 📊 Report Samples & Screenshots
+
+### Allure Test Reports
+
+![Allure Overview](images/allure1.png)
+*Comprehensive test overview with execution timeline*
+
+![Allure Details](images/allure2.png)
+*Detailed test results with failure analysis*
+
+![Allure Trends](images/allure3.png)
+*Historical trends and performance metrics*
+
+### Cucumber HTML Reports
+
+![Cucumber Report](images/cucumber-report.png)
+*Standard Cucumber reporting with feature breakdown*
+
+![Custom Cucumber Report](images/custom-cucumber-report.png)
+*Enhanced custom reporting with rich formatting*
+
+![Cucumber Details](images/custom-cucumber-report1.png)
+*Detailed scenario execution with step-by-step results*
+
+### Performance Reports
+
+- **k6 HTML Reports** - Custom performance dashboards
+- **Grafana Cloud Integration** - Real-time metrics visualization
+- **Response Time Analysis** - Detailed performance breakdowns
+- **Load Testing Results** - Concurrent user simulation data
+
+## 🚀 Getting Started Quickly
+
+### Quick Installation
+
+```bash
+# Clone and setup
+git clone https://github.com/eyupUK/playwright-cucumber-ts-pom.git
+cd playwright-cucumber-ts-pom
+npm install
+npx playwright install
+
+# Run sample tests
+npm test -- --tags="@login"
+npm run k6:local && npm run k6:report
+```
+
+### Development Workflow
+
+1. **Write feature files** in `src/test/features/`
+2. **Implement step definitions** in `src/test/stepDefs/`
+3. **Create page objects** in `src/pages/`
+4. **Run and debug** with `npm run debug`
+5. **Generate reports** with `npm run k6:report`
+
+---
+
+**📚 Framework Documentation**  
+**🔧 Version:** 1.0.0  
+**👨‍💻 Author:** EyupUK  
+**📅 Last Updated:** October 2025  
+**⭐ Features:** UI Testing | API Testing | Performance Testing | BDD | TypeScript

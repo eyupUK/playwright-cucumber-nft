@@ -11,4 +11,6 @@ index.html
 .DS_Store
 allure-results
 weather-api-result.json
-
+k6-performance-report.html
+k6-raw-results.json
+k6-results.json
