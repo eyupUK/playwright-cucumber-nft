@@ -2,7 +2,7 @@ import { createLogger, transports, format } from "winston";
 
 export function options(scenarioName?: string, logLevel: string = "info") {
     // Fallback to a default name if scenarioName is undefined or empty
-    const safeScenarioName = scenarioName?.replaceAll("[^a-zA-Z0-9]", "_") || "default_scenario";
+    const safeScenarioName = scenarioName?.replaceAll(/[^a-zA-Z0-9]+/g, "_") || "default_scenario";
 
     return createLogger({
         level: logLevel, // Set the default log level

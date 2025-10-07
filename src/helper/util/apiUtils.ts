@@ -15,7 +15,6 @@ export default class APIUtils {
         queryParams: Record<any, any> = {} // Add query parameters as an optional parameter
     ): Promise<AxiosResponse> {
         const url = `${base}${endpoint}`;
-        console.log('Request URL:', url);
         const logger = options(method + '_' + url, "debug");
 
         // Prepare the axios configuration
@@ -26,7 +25,7 @@ export default class APIUtils {
             headers,         // Request headers
             params: queryParams // Query parameters (only for GET, DELETE, etc.)
         };
-        logger.debug(`Request Config: ${JSON.stringify(config)}`);
+        logger.info(`Request Config: ${JSON.stringify(config)}`);
         return await axios(config);
     }
 }
