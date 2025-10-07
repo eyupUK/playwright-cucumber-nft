@@ -2,11 +2,11 @@ name: k6 Performance Testing
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  schedule:
-    # Run performance tests daily at 2 AM UTC
-    - cron: '0 2 * * *'
+#   pull_request:
+#     branches: [ main, master ]
+#   schedule:
+#     # Run performance tests daily at 2 AM UTC
+#     - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       test_duration:
@@ -26,6 +26,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
@@ -59,13 +68,43 @@ jobs:
             k6-raw-results.json
           retention-days: 7
 
-      - name: Generate performance report
+      - name: Generate enhanced HTML report
         if: always()
         run: |
-          echo "## k6 Performance Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "### Test Summary" >> $GITHUB_STEP_SUMMARY
-          if [ -f k6-results.json ]; then
-            echo "Performance test completed successfully" >> $GITHUB_STEP_SUMMARY
+          if [ -f k6-results.json ] || [ -f k6-raw-results.json ]; then
+            npm run k6:report
+            echo "✅ Enhanced HTML report generated: k6-performance-report.html"
           else
+            echo "❌ No k6 result files found to generate report"
+          fi
+
+      - name: Upload performance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-performance-report
+          path: k6-performance-report.html
+          retention-days: 30
+
+      - name: Generate performance summary
+        if: always()
+        run: |
+          echo "## 🚀 k6 Performance Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Virtual Users**: ${{ github.event.inputs.virtual_users || '10' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Duration**: ${{ github.event.inputs.test_duration || '30s' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test File**: src/performance/weather-api.k6.js" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f k6-results.json ]; then
+            echo "### ✅ Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "Performance test completed successfully" >> $GITHUB_STEP_SUMMARY
+            echo "📊 **Enhanced HTML Report**: Available in artifacts as 'k6-performance-report'" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Quick Metrics Preview" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            head -20 k6-results.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Test Failed" >> $GITHUB_STEP_SUMMARY
             echo "Performance test failed or no results generated" >> $GITHUB_STEP_SUMMARY
           fi

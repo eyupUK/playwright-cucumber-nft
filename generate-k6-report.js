@@ -1,65 +1,42 @@
 const fs = require('fs');
 const path = require('path');
 
-// Function to generate a simple HTML report from k6 results
+// Function to generate an enhanced HTML report from k6 results
 function generateK6Report() {
   try {
-    // Check which result files exist
-    const summaryFile = 'k6-results.json';
-    const rawFile = 'k6-raw-results.json';
+    // Check which result files exist (support multiple test types)
+    const resultFiles = [
+      { summary: 'k6-results.json', raw: 'k6-raw-results.json', type: 'Default' },
+      { summary: 'k6-load-results.json', raw: 'k6-load-raw-results.json', type: 'Load Test' },
+      { summary: 'k6-stress-results.json', raw: 'k6-stress-raw-results.json', type: 'Stress Test' },
+      { summary: 'k6-spike-results.json', raw: 'k6-spike-raw-results.json', type: 'Spike Test' }
+    ];
     
-    let data = null;
-    let dataSource = '';
+    let allData = [];
+    let rawData = [];
     
-    if (fs.existsSync(summaryFile)) {
-      data = JSON.parse(fs.readFileSync(summaryFile, 'utf8'));
-      dataSource = 'Summary';
-    } else if (fs.existsSync(rawFile)) {
-      console.log('Summary file not found, parsing raw results...');
-      // For now, just indicate raw data exists
-      dataSource = 'Raw data available but not parsed';
-    } else {
-      throw new Error('No k6 result files found. Run k6:local first.');
+    // Process all available result files
+    for (const fileSet of resultFiles) {
+      if (fs.existsSync(fileSet.summary)) {
+        const summaryData = JSON.parse(fs.readFileSync(fileSet.summary, 'utf8'));
+        allData.push({ ...summaryData, testType: fileSet.type, sourceFile: fileSet.summary });
+        console.log(`✅ Found ${fileSet.type} summary: ${fileSet.summary}`);
+      }
+      
+      if (fs.existsSync(fileSet.raw)) {
+        const rawContent = fs.readFileSync(fileSet.raw, 'utf8');
+        const rawMetrics = parseRawData(rawContent);
+        rawData.push({ testType: fileSet.type, metrics: rawMetrics, sourceFile: fileSet.raw });
+        console.log(`✅ Found ${fileSet.type} raw data: ${fileSet.raw}`);
+      }
     }
     
-    // Generate simple HTML report
-    const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>k6 Performance Test Report</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .header { background: #663399; color: white; padding: 20px; border-radius: 5px; }
-        .metric { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
-        .success { color: #28a745; }
-        .warning { color: #ffc107; }
-        .error { color: #dc3545; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #f2f2f2; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>k6 Performance Test Report</h1>
-        <p>Generated: ${new Date().toLocaleString()}</p>
-        <p>Data Source: ${dataSource}</p>
-    </div>
+    if (allData.length === 0 && rawData.length === 0) {
+      throw new Error('No k6 result files found. Run a k6 test first (npm run k6:local, k6:load, k6:stress, or k6:spike).');
+    }
     
-    ${data && data.metrics ? generateMetricsTable(data.metrics) : '<p>No metrics data available</p>'}
-    
-    ${data && data.checks ? generateChecksTable(data.checks) : '<p>No checks data available</p>'}
-    
-    <div class="metric">
-        <h3>Files Generated</h3>
-        <ul>
-            <li>${summaryFile} - ${fs.existsSync(summaryFile) ? '✅ Available' : '❌ Missing'}</li>
-            <li>${rawFile} - ${fs.existsSync(rawFile) ? '✅ Available' : '❌ Missing'}</li>
-        </ul>
-    </div>
-</body>
-</html>`;
+    // Generate enhanced HTML report with visualizations
+    const htmlContent = generateEnhancedHtmlReport(allData, rawData);
     
     fs.writeFileSync('k6-performance-report.html', htmlContent);
     console.log('✅ K6 report generated: k6-performance-report.html');
@@ -70,55 +47,1138 @@ function generateK6Report() {
   }
 }
 
+// Parse raw k6 data for time-series visualization
+function parseRawData(rawContent) {
+  const lines = rawContent.trim().split('\n');
+  const metrics = [];
+  
+  for (const line of lines) {
+    try {
+      const data = JSON.parse(line);
+      if (data.type === 'Point' && data.data) {
+        metrics.push({
+          timestamp: new Date(data.data.time),
+          name: data.metric,
+          value: data.data.value,
+          tags: data.data.tags || {}
+        });
+      }
+    } catch (e) {
+      // Skip invalid JSON lines - this is expected for k6 output format
+      continue;
+    }
+  }
+  
+  return metrics;
+}
+
+// Generate comprehensive HTML report with charts and visualizations
+function generateEnhancedHtmlReport(allData, rawData) {
+  const latestData = allData.length > 0 ? allData[allData.length - 1] : null;
+  
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>k6 Performance Test Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        ${getEnhancedCSS()}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🚀 k6 Performance Test Report</h1>
+            <div class="header-info">
+                <div class="info-item">
+                    <span class="label">Generated:</span>
+                    <span class="value">${new Date().toLocaleString()}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Tests Found:</span>
+                    <span class="value">${allData.length} summary files, ${rawData.length} raw data files</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Latest Test:</span>
+                    <span class="value">${latestData ? latestData.testType : 'N/A'}</span>
+                </div>
+            </div>
+        </header>
+
+        ${generateTestOverviewSection(allData)}
+        
+        ${latestData ? generatePerformanceMetricsSection(latestData) : ''}
+        
+        ${latestData && latestData.metrics ? generateResponseTimeChartsSection(latestData, rawData) : ''}
+        
+        ${generateLoadDistributionSection(allData)}
+        
+        ${latestData && latestData.checks ? generateChecksVisualizationSection(latestData) : ''}
+        
+        ${rawData.length > 0 ? generateTimeSeriesSection(rawData) : ''}
+        
+        ${generateComparisonSection(allData)}
+        
+        ${generateThresholdAnalysisSection(allData)}
+        
+        ${generateRecommendationsSection(allData)}
+        
+        <footer class="footer">
+            <p>Report generated by k6 Performance Test Suite | 
+            <a href="https://k6.io/docs/" target="_blank">k6 Documentation</a> | 
+            <a href="#" onclick="window.print()">Print Report</a></p>
+        </footer>
+    </div>
+
+    <script>
+        ${getChartScripts(allData, rawData)}
+    </script>
+</body>
+</html>`;
+}
+
 function generateMetricsTable(metrics) {
-  let html = '<h2>Metrics</h2><table><tr><th>Metric</th><th>Value</th><th>Status</th></tr>';
+  let html = '<div class="metrics-grid">';
   
   for (const [key, metric] of Object.entries(metrics)) {
     if (metric && typeof metric === 'object' && metric.value !== undefined) {
       const status = getMetricStatus(key, metric.value);
-      html += `<tr><td>${key}</td><td>${formatValue(key, metric.value)}</td><td class="${status.class}">${status.text}</td></tr>`;
+      const formattedValue = formatValue(key, metric.value);
+      const description = getMetricDescription(key);
+      
+      html += `
+        <div class="metric-card ${status.class}">
+          <div class="metric-header">
+            <h4>${formatMetricName(key)}</h4>
+            <span class="metric-status">${status.icon}</span>
+          </div>
+          <div class="metric-value">${formattedValue}</div>
+          <div class="metric-description">${description}</div>
+          ${metric.avg ? `<div class="metric-detail">Avg: ${formatValue(key, metric.avg)}</div>` : ''}
+          ${metric.max ? `<div class="metric-detail">Max: ${formatValue(key, metric.max)}</div>` : ''}
+          ${metric.p95 ? `<div class="metric-detail">95th: ${formatValue(key, metric.p95)}</div>` : ''}
+        </div>`;
     }
   }
   
-  html += '</table>';
+  html += '</div>';
   return html;
 }
 
+// Enhanced CSS styles for the report
+function getEnhancedCSS() {
+  return `
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: white;
+      min-height: 100vh;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .header-info {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+    
+    .info-item {
+      background: rgba(255,255,255,0.1);
+      padding: 10px 20px;
+      border-radius: 25px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .label {
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    
+    .section {
+      margin: 30px 0;
+      padding: 25px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      border-left: 5px solid #667eea;
+    }
+    
+    .section h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 1.8em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+    
+    .metric-card {
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid #e0e0e0;
+      transition: all 0.3s ease;
+      background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+    }
+    
+    .metric-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .metric-card.success {
+      border-color: #28a745;
+      background: linear-gradient(145deg, #d4edda, #c3e6cb);
+    }
+    
+    .metric-card.warning {
+      border-color: #ffc107;
+      background: linear-gradient(145deg, #fff3cd, #ffeaa7);
+    }
+    
+    .metric-card.error {
+      border-color: #dc3545;
+      background: linear-gradient(145deg, #f8d7da, #f1b0b7);
+    }
+    
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .metric-header h4 {
+      color: #495057;
+      font-size: 1.1em;
+    }
+    
+    .metric-status {
+      font-size: 1.5em;
+    }
+    
+    .metric-value {
+      font-size: 2.2em;
+      font-weight: bold;
+      color: #212529;
+      margin-bottom: 8px;
+    }
+    
+    .metric-description {
+      color: #6c757d;
+      font-size: 0.9em;
+      margin-bottom: 10px;
+    }
+    
+    .metric-detail {
+      font-size: 0.85em;
+      color: #495057;
+      background: rgba(255,255,255,0.5);
+      padding: 5px 10px;
+      border-radius: 15px;
+      display: inline-block;
+      margin: 2px;
+    }
+    
+    .chart-container {
+      position: relative;
+      height: 400px;
+      margin: 20px 0;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .chart-small {
+      height: 300px;
+    }
+    
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    
+    .overview-card {
+      text-align: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      border-radius: 15px;
+      transform: perspective(1000px) rotateX(0deg);
+      transition: all 0.3s ease;
+    }
+    
+    .overview-card:hover {
+      transform: perspective(1000px) rotateX(5deg) translateY(-10px);
+    }
+    
+    .overview-card h3 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    
+    .overview-card .big-number {
+      font-size: 2.5em;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .comparison-table th {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px;
+      font-weight: 600;
+    }
+    
+    .comparison-table td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .comparison-table tbody tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .recommendation {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 15px 0;
+    }
+    
+    .recommendation h4 {
+      margin-bottom: 10px;
+      font-size: 1.2em;
+    }
+    
+    .success { color: #28a745; }
+    .warning { color: #ffc107; }
+    .error { color: #dc3545; }
+    
+    .footer {
+      text-align: center;
+      padding: 30px;
+      color: #6c757d;
+      border-top: 2px solid #e0e0e0;
+      margin-top: 50px;
+    }
+    
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+    
+    .footer a:hover {
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+      .header-info {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .chart-container {
+        height: 300px;
+      }
+    }
+    
+    @media print {
+      body { background: white; }
+      .container { box-shadow: none; }
+      .chart-container { break-inside: avoid; }
+    }
+  `;
+}
+
+// Generate test overview section
+function generateTestOverviewSection(allData) {
+  if (allData.length === 0) return '';
+  
+  const latestData = allData[allData.length - 1];
+  const metrics = latestData.metrics || {};
+  
+  const totalRequests = metrics.http_reqs?.count || 0;
+  const avgDuration = metrics.http_req_duration?.avg || 0;
+  const failureRate = (metrics.http_req_failed?.rate || 0) * 100;
+  const vus = metrics.vus?.value || 0;
+  
+  return `
+    <section class="section">
+      <h2>📊 Test Overview</h2>
+      <div class="overview-grid">
+        <div class="overview-card">
+          <h3>Total Requests</h3>
+          <div class="big-number">${totalRequests.toLocaleString()}</div>
+          <p>HTTP requests executed</p>
+        </div>
+        <div class="overview-card">
+          <h3>Average Response Time</h3>
+          <div class="big-number">${avgDuration.toFixed(0)}ms</div>
+          <p>Mean response duration</p>
+        </div>
+        <div class="overview-card">
+          <h3>Failure Rate</h3>
+          <div class="big-number">${failureRate.toFixed(1)}%</div>
+          <p>Failed requests percentage</p>
+        </div>
+        <div class="overview-card">
+          <h3>Virtual Users</h3>
+          <div class="big-number">${vus}</div>
+          <p>Peak concurrent users</p>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+// Generate performance metrics section
+function generatePerformanceMetricsSection(data) {
+  return `
+    <section class="section">
+      <h2>⚡ Performance Metrics</h2>
+      ${generateMetricsTable(data.metrics)}
+    </section>
+  `;
+}
+
 function generateChecksTable(checks) {
-  let html = '<h2>Checks</h2><table><tr><th>Check</th><th>Passes</th><th>Fails</th><th>Success Rate</th></tr>';
+  let html = '<div class="section"><h2>✅ Validation Checks</h2>';
+  html += '<table class="comparison-table"><thead><tr><th>Check</th><th>Passes</th><th>Fails</th><th>Success Rate</th><th>Status</th></tr></thead><tbody>';
   
   for (const [key, check] of Object.entries(checks)) {
     if (check && typeof check === 'object') {
       const total = (check.passes || 0) + (check.fails || 0);
       const successRate = total > 0 ? ((check.passes || 0) / total * 100).toFixed(2) : '0';
       const statusClass = (check.fails || 0) === 0 ? 'success' : 'error';
+      const statusIcon = (check.fails || 0) === 0 ? '✅' : '❌';
       
-      html += `<tr><td>${key}</td><td>${check.passes || 0}</td><td>${check.fails || 0}</td><td class="${statusClass}">${successRate}%</td></tr>`;
+      html += `<tr>
+        <td>${formatCheckName(key)}</td>
+        <td>${check.passes || 0}</td>
+        <td>${check.fails || 0}</td>
+        <td class="${statusClass}">${successRate}%</td>
+        <td>${statusIcon}</td>
+      </tr>`;
     }
   }
   
-  html += '</table>';
+  html += '</tbody></table></div>';
   return html;
 }
 
+// Additional section generators
+function generateResponseTimeChartsSection(data, rawData) {
+  return `
+    <section class="section">
+      <h2>📈 Response Time Analysis</h2>
+      <div class="chart-container">
+        <canvas id="responseTimeChart"></canvas>
+      </div>
+      <div class="chart-container chart-small">
+        <canvas id="percentileChart"></canvas>
+      </div>
+    </section>
+  `;
+}
+
+function generateChecksVisualizationSection(data) {
+  return `
+    <section class="section">
+      <h2>✅ Validation Results</h2>
+      <div class="chart-container chart-small">
+        <canvas id="checksChart"></canvas>
+      </div>
+      ${generateChecksTable(data.checks)}
+    </section>
+  `;
+}
+
+function generateLoadDistributionSection(allData) {
+  if (allData.length === 0) return '';
+  
+  return `
+    <section class="section">
+      <h2>🎯 Load Distribution</h2>
+      <div class="chart-container">
+        <canvas id="loadDistributionChart"></canvas>
+      </div>
+      <div class="chart-container chart-small">
+        <canvas id="throughputChart"></canvas>
+      </div>
+    </section>
+  `;
+}
+
+function generateTimeSeriesSection(rawData) {
+  return `
+    <section class="section">
+      <h2>📊 Time Series Analysis</h2>
+      <div class="chart-container">
+        <canvas id="timeSeriesChart"></canvas>
+      </div>
+    </section>
+  `;
+}
+
+function generateComparisonSection(allData) {
+  if (allData.length < 2) return '';
+  
+  return `
+    <section class="section">
+      <h2>🔄 Test Comparison</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Test Type</th>
+            <th>Requests</th>
+            <th>Avg Response</th>
+            <th>95th Percentile</th>
+            <th>Failure Rate</th>
+            <th>Throughput</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${allData.map(data => {
+            const metrics = data.metrics || {};
+            return `
+              <tr>
+                <td>${data.testType}</td>
+                <td>${(metrics.http_reqs?.count || 0).toLocaleString()}</td>
+                <td>${formatValue('duration', metrics.http_req_duration?.avg || 0)}</td>
+                <td>${formatValue('duration', metrics.http_req_duration?.p95 || 0)}</td>
+                <td class="${(metrics.http_req_failed?.rate || 0) > 0.1 ? 'error' : 'success'}">
+                  ${formatValue('rate', metrics.http_req_failed?.rate || 0)}
+                </td>
+                <td>${(metrics.http_req_rate?.rate || 0).toFixed(2)} req/s</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </section>
+  `;
+}
+
+function generateThresholdAnalysisSection(allData) {
+  if (allData.length === 0) return '';
+  
+  const latestData = allData[allData.length - 1];
+  const metrics = latestData.metrics || {};
+  
+  const thresholdChecks = [
+    {
+      name: 'Response Time (95th percentile)',
+      value: metrics.http_req_duration?.p95 || 0,
+      threshold: 2000,
+      unit: 'ms',
+      lower: true
+    },
+    {
+      name: 'Failure Rate',
+      value: (metrics.http_req_failed?.rate || 0) * 100,
+      threshold: 10,
+      unit: '%',
+      lower: true
+    },
+    {
+      name: 'Average Response Time',
+      value: metrics.http_req_duration?.avg || 0,
+      threshold: 1000,
+      unit: 'ms',
+      lower: true
+    }
+  ];
+  
+  return `
+    <section class="section">
+      <h2>🎯 Threshold Analysis</h2>
+      <div class="metrics-grid">
+        ${thresholdChecks.map(check => {
+          const passed = check.lower ? check.value <= check.threshold : check.value >= check.threshold;
+          const status = passed ? 'success' : 'error';
+          const icon = passed ? '✅' : '❌';
+          
+          return `
+            <div class="metric-card ${status}">
+              <div class="metric-header">
+                <h4>${check.name}</h4>
+                <span class="metric-status">${icon}</span>
+              </div>
+              <div class="metric-value">${check.value.toFixed(1)}${check.unit}</div>
+              <div class="metric-description">
+                Threshold: ${check.lower ? '≤' : '≥'} ${check.threshold}${check.unit}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function generateRecommendationsSection(allData) {
+  if (allData.length === 0) return '';
+  
+  const latestData = allData[allData.length - 1];
+  const metrics = latestData.metrics || {};
+  const recommendations = [];
+  
+  // Analyze performance and generate recommendations
+  const avgResponse = metrics.http_req_duration?.avg || 0;
+  const p95Response = metrics.http_req_duration?.p95 || 0;
+  const failureRate = (metrics.http_req_failed?.rate || 0) * 100;
+  
+  if (avgResponse > 1000) {
+    recommendations.push({
+      type: 'warning',
+      title: 'High Average Response Time',
+      description: `Average response time is ${avgResponse.toFixed(0)}ms. Consider optimizing backend services, database queries, or adding caching layers.`
+    });
+  }
+  
+  if (p95Response > 2000) {
+    recommendations.push({
+      type: 'error',
+      title: 'Poor 95th Percentile Performance',
+      description: `95th percentile response time is ${p95Response.toFixed(0)}ms. This indicates performance issues affecting 5% of requests. Investigate slow queries and bottlenecks.`
+    });
+  }
+  
+  if (failureRate > 10) {
+    recommendations.push({
+      type: 'error',
+      title: 'High Failure Rate',
+      description: `${failureRate.toFixed(1)}% of requests are failing. Check error logs, API endpoints, and system resources.`
+    });
+  } else if (failureRate > 1) {
+    recommendations.push({
+      type: 'warning',
+      title: 'Moderate Failure Rate',
+      description: `${failureRate.toFixed(1)}% failure rate detected. Monitor error patterns and consider implementing retry mechanisms.`
+    });
+  }
+  
+  if (avgResponse < 500 && failureRate < 1) {
+    recommendations.push({
+      type: 'success',
+      title: 'Excellent Performance',
+      description: 'Your application is performing well with fast response times and low error rates. Consider load testing with higher concurrent users.'
+    });
+  }
+  
+  if (recommendations.length === 0) {
+    recommendations.push({
+      type: 'success',
+      title: 'Good Performance',
+      description: 'No major performance issues detected. Continue monitoring and consider setting up automated performance testing.'
+    });
+  }
+  
+  return `
+    <section class="section">
+      <h2>💡 Recommendations</h2>
+      ${recommendations.map(rec => `
+        <div class="recommendation">
+          <h4>${rec.title}</h4>
+          <p>${rec.description}</p>
+        </div>
+      `).join('')}
+    </section>
+  `;
+}
+
+// Helper functions
 function formatValue(key, value) {
-  if (key.includes('duration')) {
+  if (key.includes('duration') || key.includes('time')) {
     return `${value.toFixed(2)}ms`;
   }
   if (key.includes('rate') || key.includes('failed')) {
     return `${(value * 100).toFixed(2)}%`;
   }
-  return typeof value === 'number' ? value.toFixed(2) : value;
+  if (key.includes('bytes')) {
+    return formatBytes(value);
+  }
+  return typeof value === 'number' ? value.toLocaleString() : value;
+}
+
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 function getMetricStatus(key, value) {
+  if (key.includes('failed') && value > 0.1) {
+    return { class: 'error', icon: '❌', text: 'High failure rate' };
+  }
   if (key.includes('failed') && value > 0.01) {
-    return { class: 'error', text: 'High failure rate' };
+    return { class: 'warning', icon: '⚠️', text: 'Moderate failures' };
+  }
+  if (key.includes('duration') && value > 2000) {
+    return { class: 'error', icon: '🐌', text: 'Very slow' };
   }
   if (key.includes('duration') && value > 1000) {
-    return { class: 'warning', text: 'Slow response' };
+    return { class: 'warning', icon: '⏱️', text: 'Slow response' };
   }
-  return { class: 'success', text: 'OK' };
+  return { class: 'success', icon: '✅', text: 'Good' };
+}
+
+function getMetricDescription(key) {
+  const descriptions = {
+    'http_req_duration': 'Time spent waiting for response from remote host',
+    'http_req_failed': 'Rate of failed HTTP requests',
+    'http_reqs': 'Total number of HTTP requests generated',
+    'http_req_rate': 'Number of HTTP requests per second',
+    'vus': 'Number of active virtual users',
+    'vus_max': 'Maximum number of virtual users',
+    'data_received': 'Amount of data received from server',
+    'data_sent': 'Amount of data sent to server',
+    'iteration_duration': 'Time spent in a complete iteration',
+    'iterations': 'Total number of iterations executed'
+  };
+  
+  return descriptions[key] || 'Performance metric';
+}
+
+function formatMetricName(key) {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, l => l.toUpperCase())
+    .replace('Http', 'HTTP')
+    .replace('Req', 'Request')
+    .replace('Vus', 'Virtual Users');
+}
+
+function formatCheckName(key) {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Generate JavaScript for charts
+function getChartScripts(allData, rawData) {
+  const latestData = allData.length > 0 ? allData[allData.length - 1] : null;
+  
+  return `
+    // Chart.js configuration
+    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    Chart.defaults.color = '#495057';
+    
+    // Response Time Distribution Chart
+    ${latestData ? generateResponseTimeChartScript(latestData) : ''}
+    
+    // Percentile Chart
+    ${latestData ? generatePercentileChartScript(latestData) : ''}
+    
+    // Load Distribution Charts
+    ${allData.length > 0 ? generateLoadDistributionChartScript(allData) : ''}
+    
+    // Checks Visualization
+    ${latestData && latestData.checks ? generateChecksChartScript(latestData.checks) : ''}
+    
+    // Time Series Chart
+    ${rawData.length > 0 ? generateTimeSeriesChartScript(rawData) : ''}
+    
+    // Make charts responsive
+    window.addEventListener('resize', function() {
+      Chart.helpers.each(Chart.instances, function(instance) {
+        instance.resize();
+      });
+    });
+  `;
+}
+
+function generateResponseTimeChartScript(data) {
+  const metrics = data.metrics.http_req_duration || {};
+  
+  return `
+    const responseCtx = document.getElementById('responseTimeChart');
+    if (responseCtx) {
+      new Chart(responseCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Average', 'Median', '90th Percentile', '95th Percentile', '99th Percentile'],
+          datasets: [{
+            label: 'Response Time (ms)',
+            data: [
+              ${metrics.avg || 0},
+              ${metrics.med || 0},
+              ${metrics.p90 || 0},
+              ${metrics.p95 || 0},
+              ${metrics.p99 || 0}
+            ],
+            backgroundColor: [
+              'rgba(102, 126, 234, 0.8)',
+              'rgba(118, 75, 162, 0.8)',
+              'rgba(255, 193, 7, 0.8)',
+              'rgba(255, 108, 55, 0.8)',
+              'rgba(220, 53, 69, 0.8)'
+            ],
+            borderColor: [
+              'rgba(102, 126, 234, 1)',
+              'rgba(118, 75, 162, 1)',
+              'rgba(255, 193, 7, 1)',
+              'rgba(255, 108, 55, 1)',
+              'rgba(220, 53, 69, 1)'
+            ],
+            borderWidth: 2,
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Response Time Distribution',
+              font: { size: 16, weight: 'bold' }
+            },
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Time (ms)'
+              }
+            }
+          }
+        }
+      });
+    }
+  `;
+}
+
+function generatePercentileChartScript(data) {
+  const metrics = data.metrics.http_req_duration || {};
+  
+  return `
+    const percentileCtx = document.getElementById('percentileChart');
+    if (percentileCtx) {
+      new Chart(percentileCtx, {
+        type: 'line',
+        data: {
+          labels: ['50th', '90th', '95th', '99th'],
+          datasets: [{
+            label: 'Response Time (ms)',
+            data: [
+              ${metrics.med || 0},
+              ${metrics.p90 || 0},
+              ${metrics.p95 || 0},
+              ${metrics.p99 || 0}
+            ],
+            borderColor: 'rgba(102, 126, 234, 1)',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Response Time Percentiles',
+              font: { size: 16, weight: 'bold' }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Time (ms)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Percentile'
+              }
+            }
+          }
+        }
+      });
+    }
+  `;
+}
+
+function generateChecksChartScript(checks) {
+  const checkNames = Object.keys(checks);
+  const passData = checkNames.map(name => checks[name].passes || 0);
+  const failData = checkNames.map(name => checks[name].fails || 0);
+  
+  return `
+    const checksCtx = document.getElementById('checksChart');
+    if (checksCtx) {
+      new Chart(checksCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Passed', 'Failed'],
+          datasets: [{
+            data: [
+              ${passData.reduce((a, b) => a + b, 0)},
+              ${failData.reduce((a, b) => a + b, 0)}
+            ],
+            backgroundColor: [
+              'rgba(40, 167, 69, 0.8)',
+              'rgba(220, 53, 69, 0.8)'
+            ],
+            borderColor: [
+              'rgba(40, 167, 69, 1)',
+              'rgba(220, 53, 69, 1)'
+            ],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Overall Check Results',
+              font: { size: 16, weight: 'bold' }
+            },
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
+    }
+  `;
+}
+
+function generateLoadDistributionChartScript(allData) {
+  const testTypes = allData.map(d => d.testType);
+  const throughputs = allData.map(d => d.metrics?.http_req_rate?.rate || 0);
+  
+  return `
+    // Load Distribution Chart
+    const loadDistCtx = document.getElementById('loadDistributionChart');
+    if (loadDistCtx) {
+      new Chart(loadDistCtx, {
+        type: 'radar',
+        data: {
+          labels: ['Requests', 'Avg Response', 'Throughput', '95th Percentile', 'Virtual Users'],
+          datasets: [
+            ${allData.map((data, index) => {
+              const metrics = data.metrics || {};
+              const colors = [
+                'rgba(102, 126, 234, 0.6)',
+                'rgba(255, 99, 132, 0.6)',
+                'rgba(255, 205, 86, 0.6)',
+                'rgba(75, 192, 192, 0.6)',
+                'rgba(153, 102, 255, 0.6)'
+              ];
+              
+              return `{
+                label: '${data.testType}',
+                data: [
+                  ${Math.min((metrics.http_reqs?.count || 0) / 1000, 100)},
+                  ${Math.min((metrics.http_req_duration?.avg || 0) / 10, 100)},
+                  ${Math.min((metrics.http_req_rate?.rate || 0) * 2, 100)},
+                  ${Math.min((metrics.http_req_duration?.p95 || 0) / 20, 100)},
+                  ${Math.min((metrics.vus?.value || 0), 100)}
+                ],
+                backgroundColor: '${colors[index % colors.length]}',
+                borderColor: '${colors[index % colors.length].replace('0.6', '1')}',
+                borderWidth: 2,
+                pointBackgroundColor: '${colors[index % colors.length].replace('0.6', '1')}'
+              }`;
+            }).join(',')}
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Performance Profile Comparison',
+              font: { size: 16, weight: 'bold' }
+            }
+          },
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100
+            }
+          }
+        }
+      });
+    }
+    
+    // Throughput Chart
+    const throughputCtx = document.getElementById('throughputChart');
+    if (throughputCtx) {
+      new Chart(throughputCtx, {
+        type: 'bar',
+        data: {
+          labels: [${testTypes.map(t => `'${t}'`).join(',')}],
+          datasets: [{
+            label: 'Requests per Second',
+            data: [${throughputs.join(',')}],
+            backgroundColor: 'rgba(75, 192, 192, 0.8)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 2,
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Throughput Comparison',
+              font: { size: 16, weight: 'bold' }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Requests/second'
+              }
+            }
+          }
+        }
+      });
+    }
+  `;
+}
+
+function generateTimeSeriesChartScript(rawData) {
+  if (rawData.length === 0) return '';
+  
+  const latestRaw = rawData[rawData.length - 1];
+  const durationMetrics = latestRaw.metrics.filter(m => m.name === 'http_req_duration').slice(0, 100);
+  
+  return `
+    const timeSeriesCtx = document.getElementById('timeSeriesChart');
+    if (timeSeriesCtx) {
+      new Chart(timeSeriesCtx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: 'Response Time (ms)',
+            data: [
+              ${durationMetrics.map(m => `{ x: '${m.timestamp.toISOString()}', y: ${m.value} }`).join(',')}
+            ],
+            borderColor: 'rgba(102, 126, 234, 1)',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.1,
+            pointRadius: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Response Time Over Time',
+              font: { size: 16, weight: 'bold' }
+            }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                displayFormats: {
+                  second: 'HH:mm:ss'
+                }
+              },
+              title: {
+                display: true,
+                text: 'Time'
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Response Time (ms)'
+              }
+            }
+          }
+        }
+      });
+    }
+  `;
 }
 
 generateK6Report();
