@@ -11,6 +11,7 @@ A comprehensive test automation framework built with **Playwright**, **Cucumber*
 - ✅ **Multi-Environment Support** - Dev, QA, Staging, Prod configurations
 - ✅ **Cross-Browser Testing** - Chrome, Firefox, Safari support
 - ✅ **Performance Testing** - k6 integration with Load/Stress/Spike testing
+- ✅ **Security Testing** - OWASP-inspired API and web hardening checks
 - ✅ **Enhanced Reporting** - Custom HTML reports with interactive charts & AI insights
 - ✅ **Rich Reporting** - Allure, HTML, JSON reports with screenshots/videos
 - ✅ **Parallel Execution** - Faster test execution
@@ -132,6 +133,15 @@ npm run test:failed
 # Clean all generated files
 npm run clean
 ```
+
+### Security Testing
+
+```bash
+# Run all security-focused scenarios (Weather API, JWT, OAuth, SauceDemo)
+npm run test:security
+```
+
+For environment setup and extension ideas, see `docs/security-testing-guide.md`.
 
 ## 📁 Project Structure
 
