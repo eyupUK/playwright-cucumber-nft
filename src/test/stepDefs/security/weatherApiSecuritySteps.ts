@@ -61,6 +61,7 @@ const callCurrentWeather = async (
 Given('the Weather API base is configured', function () {
   weatherBaseUrl = process.env.WEATHERAPI_BASEURL ?? 'https://api.weatherapi.com/v1';
   weatherApiKey = process.env.WEATHERAPI_KEY;
+  expect(weatherApiKey, 'WEATHERAPI_KEY must be set').toBeTruthy();
   expect(weatherBaseUrl, 'Weather API base URL must resolve to HTTPS').toContain('https://');
 });
 

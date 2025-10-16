@@ -56,7 +56,7 @@ Before setting up the project, ensure you have:
 
 ```bash
 # Run all tests (default: staging environment)
-npm test
+npm run test
 
 # Run tests on specific environment
 npm run test:qa
@@ -64,19 +64,19 @@ npm run test:prod
 npm run test:local
 
 # Run tests with specific tags
-npm test -- --tags="@ui"
-npm test -- --tags="@api"
-npm test -- --tags="@login"
+npm test --tags="@ui"
+npm test --tags="@api"
+npm test --tags="@login"
 
 # Run tests on specific browser
-BROWSER=firefox npm test
-BROWSER=webkit npm test
+BROWSER=firefox npm run test
+BROWSER=webkit npm run test
 
 # Run tests in parallel
-PARALLEL=4 npm test
+PARALLEL=4 npm run test
 
 # Run tests in headed mode
-HEAD=true npm test
+HEAD=true npm run test
 
 # Debug mode
 npm run debug

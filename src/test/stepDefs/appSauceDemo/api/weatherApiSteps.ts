@@ -13,7 +13,7 @@ let payload: any;
 
 
 Given('I have a valid WeatherAPI key configured', async function () {
-  apiKey = process.env.WEATHERAPI_KEY || "31ea33c30d254920977133231250909";
+  apiKey = process.env.WEATHERAPI_KEY || "";
   if (apiKey == null || apiKey.trim() === "") {
     throw new Error("Set WEATHERAPI_KEY as env or -D system property");
   }
