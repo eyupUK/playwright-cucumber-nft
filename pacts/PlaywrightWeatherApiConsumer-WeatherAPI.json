@@ -1,0 +1,709 @@
+{
+  "consumer": {
+    "name": "PlaywrightWeatherApiConsumer"
+  },
+  "interactions": [
+    {
+      "description": "a POST request for bulk current weather",
+      "providerStates": [
+        {
+          "name": "bulk request on free plan"
+        }
+      ],
+      "request": {
+        "body": {
+          "locations": [
+            {
+              "custom_id": "l1",
+              "q": "London"
+            },
+            {
+              "custom_id": "z1",
+              "q": "90201"
+            }
+          ]
+        },
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/v1/current.json",
+        "query": {
+          "key": [
+            "PACT-KEY-12345"
+          ],
+          "q": [
+            "bulk"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "error": {
+            "code": 2009,
+            "message": "API key does not have access to the resource. Please check your plan and billing details."
+          }
+        },
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.error.code": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.error.message": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 400
+      }
+    },
+    {
+      "description": "a request for 3-day weather forecast",
+      "providerStates": [
+        {
+          "name": "forecast data exists for London"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/v1/forecast.json",
+        "query": {
+          "days": [
+            "3"
+          ],
+          "key": [
+            "PACT-KEY-12345"
+          ],
+          "q": [
+            "London"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "forecast": {
+            "forecastday": [
+              {
+                "date": "2023-01-01",
+                "day": {
+                  "maxtemp_c": 12.5,
+                  "mintemp_c": 5.2
+                }
+              },
+              {
+                "date": "2023-01-01",
+                "day": {
+                  "maxtemp_c": 12.5,
+                  "mintemp_c": 5.2
+                }
+              },
+              {
+                "date": "2023-01-01",
+                "day": {
+                  "maxtemp_c": 12.5,
+                  "mintemp_c": 5.2
+                }
+              }
+            ]
+          },
+          "location": {
+            "country": "United Kingdom",
+            "lat": 51.5074,
+            "lon": -0.1278,
+            "name": "London"
+          }
+        },
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.forecast.forecastday": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 3
+                }
+              ]
+            },
+            "$.forecast.forecastday[*].date": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                },
+                {
+                  "match": "type"
+                },
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.forecast.forecastday[*].day.maxtemp_c": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                },
+                {
+                  "match": "type"
+                },
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.forecast.forecastday[*].day.mintemp_c": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                },
+                {
+                  "match": "type"
+                },
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.country": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.lat": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.lon": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request for unknown location",
+      "providerStates": [
+        {
+          "name": "invalid location provided"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/v1/current.json",
+        "query": {
+          "key": [
+            "PACT-KEY-12345"
+          ],
+          "q": [
+            "UnknownCity12345"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "error": {
+            "code": 1006,
+            "message": "No location found matching parameter 'q'."
+          }
+        },
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.error.code": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.error.message": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 400
+      }
+    },
+    {
+      "description": "a request with missing q parameter",
+      "providerStates": [
+        {
+          "name": "request is missing the q parameter"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/v1/current.json",
+        "query": {
+          "key": [
+            "PACT-KEY-12345"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "error": {
+            "code": 1003,
+            "message": "Parameter q is missing."
+          }
+        },
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.error.code": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.error.message": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 400
+      }
+    },
+    {
+      "description": "a request for current weather in London",
+      "providerStates": [
+        {
+          "name": "weather data exists for London"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/v1/current.json",
+        "query": {
+          "key": [
+            "PACT-KEY-12345"
+          ],
+          "q": [
+            "London"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "current": {
+            "condition": {
+              "icon": "//cdn.weatherapi.com/weather/64x64/day/116.png",
+              "text": "Partly cloudy"
+            },
+            "last_updated_epoch": 1609459200,
+            "temp_c": 15.5
+          },
+          "location": {
+            "country": "United Kingdom",
+            "lat": 51.5074,
+            "lon": -0.1278,
+            "name": "London"
+          }
+        },
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.current.condition.icon": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.current.condition.text": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.current.last_updated_epoch": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.current.temp_c": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.country": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.lat": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.lon": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request for current weather by coordinates",
+      "providerStates": [
+        {
+          "name": "weather data exists for coordinates"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/v1/current.json",
+        "query": {
+          "key": [
+            "PACT-KEY-12345"
+          ],
+          "q": [
+            "48.8567,2.3508"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "current": {
+            "condition": {
+              "icon": "//cdn.weatherapi.com/weather/64x64/day/113.png",
+              "text": "Clear"
+            },
+            "last_updated_epoch": 1609459200,
+            "temp_c": 18.2
+          },
+          "location": {
+            "country": "France",
+            "lat": 48.8567,
+            "lon": 2.3508,
+            "name": "Paris"
+          }
+        },
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.current.condition.icon": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.current.condition.text": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.current.last_updated_epoch": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.current.temp_c": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.country": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.lat": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.lon": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request for current weather by zip code",
+      "providerStates": [
+        {
+          "name": "weather data exists for zip code"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/v1/current.json",
+        "query": {
+          "key": [
+            "PACT-KEY-12345"
+          ],
+          "q": [
+            "90201"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "current": {
+            "condition": {
+              "icon": "//cdn.weatherapi.com/weather/64x64/day/113.png",
+              "text": "Sunny"
+            },
+            "last_updated_epoch": 1609459200,
+            "temp_c": 22
+          },
+          "location": {
+            "country": "USA",
+            "lat": 33.9653,
+            "lon": -118.1517,
+            "name": "Bell Gardens"
+          }
+        },
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.current.condition.icon": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.current.condition.text": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.current.last_updated_epoch": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.current.temp_c": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.country": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.lat": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.lon": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.location.name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "12.5.2"
+    },
+    "pactRust": {
+      "ffi": "0.4.20",
+      "models": "1.2.0"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "WeatherAPI"
+  }
+}
