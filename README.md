@@ -58,6 +58,11 @@ Before setting up the project, ensure you have:
 
 ### Running Tests
 
+- Weather API base URL is configured in the template; provide your key via env var:
+  ```bash
+  export WEATHER_API_KEY=your_api_key
+  ```
+
 ```bash
 # Run all tests (default: staging environment)
 npm run test
@@ -144,6 +149,24 @@ npm run clean
 # Run all security-focused scenarios (Weather API, JWT, OAuth, SauceDemo)
 npm run test:security
 ```
+
+#### OAuth Security Tests
+
+We provide realistic OAuth client-credentials tests with two providers. An OAuth toggle helper (`oauthConfig.ts`) prefers environment variables and falls back to `.env`.
+
+- Precedence for oauth.* keys:
+  1. Environment variables: `OAUTH_TOKEN_URL`, `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `OAUTH_SCOPE`, `OAUTH_PROBE_URL`
+  2. System properties: `-Doauth.token_url=...` etc.
+  3. `.env`: `oauth.token_url=...` etc.
+
+- Spotify (opaque tokens): set env vars, then run only @spotify
+  ```bash
+  export OAUTH_TOKEN_URL="https://accounts.spotify.com/api/token"
+  export OAUTH_CLIENT_ID="YOUR_SPOTIFY_CLIENT_ID"
+  export OAUTH_CLIENT_SECRET="YOUR_SPOTIFY_CLIENT_SECRET"
+  export OAUTH_SCOPE=""
+  export OAUTH_PROBE_URL="https://api.spotify.com/v1/search?q=daft%20punk&type=artist&limit=1"
+   ```
 
 For environment setup and extension ideas, see `docs/security-testing-guide.md`.
 

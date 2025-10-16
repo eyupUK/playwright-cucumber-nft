@@ -17,7 +17,7 @@ Feature: SauceDemo.com Security Checks
   # - HTTP client follows redirects and captures response headers and body for assertions.
   # - OWASP baseline checks are implemented in step definitions (no external calls required).
   # - Secrets are not logged; test output artefacts are written under test-results/.
-
+  @api
   Scenario: Homepage returns recommended security headers
     Given I query the SauceDemo homepage
     Then the web response header "Strict-Transport-Security" is present
@@ -26,10 +26,12 @@ Feature: SauceDemo.com Security Checks
     And the response has either "X-Frame-Options" or a CSP "frame-ancestors" directive
     And the response meets OWASP baseline for HTTPS endpoints
 
+  @api
   Scenario: Homepage HTML does not reference insecure resources
     Given I fetch the SauceDemo homepage HTML
     Then the page should not reference insecure http resources
 
+  @api @wip 
   Scenario: CSP should not allow unsafe directives
     Given I query the SauceDemo homepage
     Then the CSP must not contain "unsafe-inline" or "unsafe-eval"

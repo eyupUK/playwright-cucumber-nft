@@ -17,7 +17,7 @@ Given('I have a valid WeatherAPI key configured', async function () {
   if (apiKey == null || apiKey.trim() === "") {
     throw new Error("Set WEATHERAPI_KEY as env or -D system property");
   }
-  baseUrl = process.env.WEATHERAPI_BASEURL || "http://api.weatherapi.com/v1";
+  baseUrl = process.env.WEATHERAPI_BASEURL || "https://api.weatherapi.com/v1";
 });
 
 // current.json
