@@ -12,6 +12,7 @@ A comprehensive test automation framework built with **Playwright**, **Cucumber*
 - ✅ **Cross-Browser Testing** - Chrome, Firefox, Safari support
 - ✅ **Performance Testing** - k6 integration with Load/Stress/Spike testing
 - ✅ **Security Testing** - OWASP-inspired API and web hardening checks
+- ✅ **Contract Testing** - Pact-based consumer mocks for Weather API flows
 - ✅ **Enhanced Reporting** - Custom HTML reports with interactive charts & AI insights
 - ✅ **Rich Reporting** - Allure, HTML, JSON reports with screenshots/videos
 - ✅ **Parallel Execution** - Faster test execution
@@ -142,6 +143,15 @@ npm run test:security
 ```
 
 For environment setup and extension ideas, see `docs/security-testing-guide.md`.
+
+### Contract Testing
+
+```bash
+# Generate Pact contracts for Weather API consumer scenarios
+npm test -- --tags="@contract"
+```
+
+This spins up Pact mock servers and writes pact files to the `pacts/` directory for provider verification. Configuration tips live in `docs/contract-testing-guide.md`.
 
 ## 📁 Project Structure
 
