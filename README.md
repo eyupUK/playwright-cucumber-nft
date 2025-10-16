@@ -1,6 +1,8 @@
 # Playwright + Cucumber + TypeScript Framework
 
-A comprehensive test automation framework built with **Playwright**, **Cucumber**, and **TypeScript** that supports both UI and API testing with performance testing capabilities using **k6**.
+## API • Contract • UI • Security • Accessibility • Performance Testing
+
+A comprehensive test automation framework built with **Playwright**, **Cucumber**, and **TypeScript** that supports **UI, API, Non-Functional Testing** with **Pact** for Contract Testing, **axe-core** for Accessibility Testing, and **k6** for Performance Testing capabilities.
 
 ## 🚀 Features
 
@@ -13,6 +15,7 @@ A comprehensive test automation framework built with **Playwright**, **Cucumber*
 - ✅ **Performance Testing** - k6 integration with Load/Stress/Spike testing
 - ✅ **Security Testing** - OWASP-inspired API and web hardening checks
 - ✅ **Contract Testing** - Pact-based consumer mocks for Weather API flows
+- ✅ **Accessibility Testing** - Axe scan reports zero Serious or Critical violations
 - ✅ **Enhanced Reporting** - Custom HTML reports with interactive charts & AI insights
 - ✅ **Rich Reporting** - Allure, HTML, JSON reports with screenshots/videos
 - ✅ **Parallel Execution** - Faster test execution
@@ -33,7 +36,7 @@ Before setting up the project, ensure you have:
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/eyupUK/playwright-cucumber-ts-pom.git
-   cd playwright-cucumber-ts-pom
+   cd playwright-cucumber-nft
    ```
 
 2. **Install dependencies:**
@@ -148,7 +151,7 @@ For environment setup and extension ideas, see `docs/security-testing-guide.md`.
 
 ```bash
 # Generate Pact contracts for Weather API consumer scenarios
-npm test -- --tags="@contract"
+npm test --tags="@contract"
 ```
 
 This spins up Pact mock servers and writes pact files to the `pacts/` directory for provider verification. Configuration tips live in `docs/contract-testing-guide.md`.
@@ -303,9 +306,9 @@ Optimized `tsconfig.json` with:
 ### Running in CI
 
 Tests automatically run on:
-- Push to main/master branches
-- Pull requests
-- Scheduled cron jobs
+- Push to main/master branches  ( temprorarily cancelled )
+- Pull requests  ( temprorarily cancelled )
+- Scheduled cron jobs  ( temprorarily cancelled )
 - Manual workflow dispatch
 
 ## 🎯 Best Practices Implemented
@@ -326,7 +329,7 @@ Tests automatically run on:
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes
-4. Run tests: `npm test`
+4. Run tests: `npm run test`
 5. Commit changes: `git commit -m 'Add feature'`
 6. Push to branch: `git push origin feature-name`
 7. Submit a pull request

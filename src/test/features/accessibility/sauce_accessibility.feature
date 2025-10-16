@@ -11,10 +11,10 @@ Feature: Accessibility Testing For SauceDemo
   # - Report artifacts are generated (Allure and cucumber HTML/JSON) for audit.
   #
   # Technical Requirements
-  # - Use axe-core Selenium integration (version aligned in pom) and Chrome with stable driver.
+  # - Use axe-core Playwright integration (version aligned in pom) and Chrome with stable driver.
   # - Public site https://www.saucedemo.com is reachable from the test environment.
   # - Headless run is supported via configuration if desired.
-  # - Allure output goes to target/allure-results; historical root-level allure-results is ignored by .gitignore.
+  # - Allure output goes to target/allure-results;
 
   @login
   Scenario: Login page has no serious or critical accessibility violations
