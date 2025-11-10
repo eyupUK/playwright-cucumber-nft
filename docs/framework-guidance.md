@@ -253,28 +253,31 @@ export abstract class BasePage {
 // ✅ Good - Specific page extending base page
 export class LoginPage extends BasePage {
   // Locators as private readonly properties
-  private readonly usernameInput = this.page.locator('#username');
-  private readonly passwordInput = this.page.locator('#password');
-  private readonly loginButton = this.page.locator('#login-button');
-  private readonly errorMessage = this.page.locator('.error-message');
+
+  private readonly Elements = {
+    usernameInput = this.page.locator('#username'),
+    passwordInput = this.page.locator('#password'),
+    loginButton = this.page.locator('#login-button'),
+    errorMessage = this.page.locator('.error-message')
+  }
   
   getPageUrl(): string {
     return '/login';
   }
   
   async isPageLoaded(): Promise<boolean> {
-    return await this.loginButton.isVisible();
+    return await this.Elements.loginButton.isVisible();
   }
   
   // Business logic methods
   async login(username: string, password: string): Promise<void> {
-    await this.usernameInput.fill(username);
-    await this.passwordInput.fill(password);
-    await this.loginButton.click();
+    await this.Elements.usernameInput.fill(username);
+    await this.Elements.passwordInput.fill(password);
+    await this.Elements.loginButton.click();
   }
   
   async getErrorMessage(): Promise<string> {
-    return await this.errorMessage.textContent() || '';
+    return await this.errorMessage.Elements.textContent() || '';
   }
   
   // Validation methods
