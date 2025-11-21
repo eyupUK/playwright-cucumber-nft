@@ -66,7 +66,7 @@ Feature: Accessibility Testing For SauceDemo
     And I open the cart page
     And I proceed to checkout information page
     And I fill the checkout form with valid data
-    And I finish the checkout
+    And I finish the checkout accessibility scanning
     When I scan the page for accessibility issues
     Then there should be no serious or critical accessibility violations
 

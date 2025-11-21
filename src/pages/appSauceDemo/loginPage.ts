@@ -3,8 +3,6 @@ import { BasePage } from "./base.page";
 
 
 export default class LoginPage extends BasePage{
-
-
     constructor(page: Page) {
         super(page);
     }

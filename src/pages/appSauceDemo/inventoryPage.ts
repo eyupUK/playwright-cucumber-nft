@@ -36,7 +36,7 @@ export default class InventoryPage extends BasePage {
     }
 
     async getCartBadgeCount(): Promise<number> {
-        await this.page.waitForSelector(this.Elements.cartBadge, { timeout: 2000 }).catch(() => {});
+        await this.page.waitForSelector("span[data-test='shopping-cart-badge']", { timeout: 2000 }).catch(() => {});
         const badge = this.Elements.cartBadge;
         if (await badge.isVisible()) {
             const countText = await badge.textContent();

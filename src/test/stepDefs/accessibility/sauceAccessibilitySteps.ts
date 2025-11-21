@@ -70,7 +70,7 @@ Given('I fill the checkout form with valid data', async function (this: any) {
   await checkoutOverviewPage.isLoaded();
 });
 
-Given('I finish the checkout', async function (this: any) {
+Given('I finish the checkout accessibility scanning', async function (this: any) {
   checkoutOverviewPage = checkoutOverviewPage ?? new CheckoutOverviewPage(this.page);
   await checkoutOverviewPage.isLoaded();
   await checkoutOverviewPage.finish();
