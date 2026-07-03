@@ -7,14 +7,15 @@
     "lib": ["es2021", "dom"],
     "typeRoots": ["./node_modules/@types", "src/helper/types"],
     "resolveJsonModule": true,
+    "baseUrl": "./src",
     "paths": {
-      "@pages/*": ["./pages/*"],
-      "@utils/*": ["./helper/util/*"]
+      "@pages/*": ["pages/*"],
+      "@utils/*": ["helper/util/*"]
     },
     "target": "ES2022",
     "module": "commonjs",
     "noImplicitAny": true,
     "skipLibCheck": true,
     "outDir": "./dist"
-    }
+  }
 }
